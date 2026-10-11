@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
+import KRSLogo from './KRSLogo'
 
 export default function Header() {
   const [time, setTime] = useState(new Date())
@@ -12,7 +13,7 @@ export default function Header() {
   return (
     <header className="header">
       <div className="header-brand">
-        <div className="header-brand-icon" aria-hidden="true">⚖️</div>
+        <KRSLogo size={46} />
         <div>
           <div className="header-title">K R S SILVERS</div>
           <div className="header-sub">Bullion &amp; Chit Management</div>

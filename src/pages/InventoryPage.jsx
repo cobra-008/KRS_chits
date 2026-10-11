@@ -81,8 +81,8 @@ export default function InventoryPage({ onNavigate }) {
               id="btn-issue-selected"
               className="btn btn-maroon btn-sm"
               onClick={() => {
-                toast.success(`${selected.size} kacha(s) ready to issue — open Issue Voucher`)
-                onNavigate('issue')
+                toast.success(`${selected.size} kacha(s) transferred to Issue Voucher`)
+                onNavigate('issue', Array.from(selected))
               }}
             >
               <Send /> Issue Selected

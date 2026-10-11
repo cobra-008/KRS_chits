@@ -4,6 +4,7 @@ import Navigation from './components/Navigation'
 import { isDemoMode } from './lib/supabase'
 import HomePage from './pages/HomePage'
 import VoucherPage from './pages/VoucherPage'
+import IssueVoucherPage from './pages/IssueVoucherPage'
 import CustomersPage from './pages/CustomersPage'
 import GroupsPage from './pages/GroupsPage'
 import InventoryPage from './pages/InventoryPage'
@@ -12,18 +13,26 @@ import TransactionsPage from './pages/TransactionsPage'
 
 export default function App() {
   const [activePage, setActivePage] = useState('home')
+  const [issueSelectedIds, setIssueSelectedIds] = useState([])
+
+  const handleNavigate = (page, data) => {
+    if (page === 'issue') {
+      setIssueSelectedIds(Array.isArray(data) ? data : [])
+    }
+    setActivePage(page)
+  }
 
   const renderPage = () => {
     switch (activePage) {
-      case 'home':         return <HomePage onNavigate={setActivePage} />
+      case 'home':         return <HomePage onNavigate={handleNavigate} />
       case 'receipt':      return <VoucherPage type="receipt" />
-      case 'issue':        return <VoucherPage type="issue" />
+      case 'issue':        return <IssueVoucherPage initialSelectedIds={issueSelectedIds} />
       case 'customers':    return <CustomersPage />
       case 'groups':       return <GroupsPage />
-      case 'inventory':    return <InventoryPage onNavigate={setActivePage} />
+      case 'inventory':    return <InventoryPage onNavigate={handleNavigate} />
       case 'outstanding':  return <OutstandingPage />
       case 'transactions': return <TransactionsPage />
-      default:             return <HomePage onNavigate={setActivePage} />
+      default:             return <HomePage onNavigate={handleNavigate} />
     }
   }
 
@@ -44,7 +53,7 @@ export default function App() {
           ⚙️ <strong>Setup Required:</strong> Add your Supabase credentials to <code style={{ background: 'rgba(0,0,0,0.06)', padding: '2px 8px', borderRadius: 4, color: '#634707' }}>.env.local</code> to connect the database. See <code style={{ background: 'rgba(0,0,0,0.06)', padding: '2px 8px', borderRadius: 4, color: '#634707' }}>supabase/schema.sql</code> to create your tables.
         </div>
       )}
-      <Navigation active={activePage} onChange={setActivePage} />
+      <Navigation active={activePage} onChange={handleNavigate} />
       <main className="app-content" id="main-content" role="main">
         {renderPage()}
       </main>
