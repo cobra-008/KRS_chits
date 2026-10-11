@@ -130,25 +130,26 @@ export default function VoucherPage({ type = 'receipt' }) {
 
       <div className="card card-gold">
         {/* Voucher meta row */}
-        <div className="flex gap-4 mb-5" style={{ flexWrap: 'wrap', alignItems: 'flex-end' }}>
+        <div className="flex gap-6 mb-6" style={{ flexWrap: 'wrap', alignItems: 'flex-end', rowGap: 20 }}>
           {/* Voucher # (auto) */}
-          <div className="form-group" style={{ minWidth: 120 }}>
+          <div className="form-group" style={{ minWidth: 130 }}>
             <label className="form-label">Voucher No.</label>
             <div style={{
-              background: 'var(--clr-surface-3)',
-              border: '1px solid var(--clr-gold-dim)',
+              background: 'var(--clr-surface-2)',
+              border: '1.5px solid var(--clr-border)',
               borderRadius: 'var(--r-sm)',
-              padding: '7px 12px',
+              padding: '11px 18px',
               color: 'var(--clr-gold)',
-              fontSize: '0.9rem',
+              fontSize: '0.92rem',
               fontWeight: 700,
+              boxShadow: 'inset 0 1px 2px rgba(18, 24, 38, 0.02)',
             }}>
               {savedVoucher ? `#${savedVoucher.voucher_no}` : 'Auto'}
             </div>
           </div>
 
           {/* Customer */}
-          <div className="form-group" style={{ flex: 2, minWidth: 200 }}>
+          <div className="form-group" style={{ flex: 2, minWidth: 240 }}>
             <label className="form-label" htmlFor="voucher-customer">Customer Name</label>
             <select
               id="voucher-customer"
@@ -164,7 +165,7 @@ export default function VoucherPage({ type = 'receipt' }) {
           </div>
 
           {/* Date */}
-          <div className="form-group" style={{ minWidth: 160, marginLeft: 'auto' }}>
+          <div className="form-group" style={{ minWidth: 180, marginLeft: 'auto' }}>
             <label className="form-label" htmlFor="voucher-date">Date</label>
             <input
               id="voucher-date"
@@ -224,10 +225,10 @@ export default function VoucherPage({ type = 'receipt' }) {
           </table>
         </div>
 
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mt-4 pt-1">
           <button
             id="btn-add-lot"
-            className="btn btn-ghost btn-sm"
+            className="btn btn-ghost"
             onClick={addLot}
           >
             <Plus /> Add Lot

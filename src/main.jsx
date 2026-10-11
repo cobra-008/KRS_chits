@@ -11,17 +11,19 @@ createRoot(document.getElementById('root')).render(
       position="top-right"
       toastOptions={{
         style: {
-          background: '#1A1A1A',
-          color: '#F0ECD8',
-          border: '1px solid #333333',
-          borderRadius: '10px',
-          fontSize: '0.83rem',
+          background: '#FFFFFF',
+          color: '#111827',
+          border: '1px solid #D8DFE8',
+          borderRadius: '12px',
+          boxShadow: '0 8px 30px rgba(18, 24, 38, 0.12)',
+          fontSize: '0.86rem',
+          padding: '12px 18px',
         },
         success: {
-          iconTheme: { primary: '#4CAF7D', secondary: '#1A1A1A' },
+          iconTheme: { primary: '#167245', secondary: '#FFFFFF' },
         },
         error: {
-          iconTheme: { primary: '#E57373', secondary: '#1A1A1A' },
+          iconTheme: { primary: '#A62626', secondary: '#FFFFFF' },
         },
       }}
     />

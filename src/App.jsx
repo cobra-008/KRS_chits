@@ -32,16 +32,16 @@ export default function App() {
       <Header />
       {isDemoMode && (
         <div style={{
-          background: 'linear-gradient(90deg, var(--clr-maroon-bg), var(--clr-gold-bg))',
-          borderBottom: '1px solid var(--clr-gold-dim)',
-          padding: '8px 24px',
-          fontSize: '0.78rem',
-          color: 'var(--clr-gold)',
+          background: 'linear-gradient(90deg, #FBF8EE 0%, #F6EEDB 100%)',
+          borderBottom: '1px solid rgba(179, 134, 27, 0.25)',
+          padding: '10px 36px',
+          fontSize: '0.82rem',
+          color: '#8A6818',
           display: 'flex',
           alignItems: 'center',
-          gap: 8,
+          gap: 10,
         }}>
-          ⚙️ <strong>Setup Required:</strong> Add your Supabase credentials to <code style={{ background: 'rgba(0,0,0,0.3)', padding: '1px 6px', borderRadius: 4 }}>.env.local</code> to connect the database. See <code style={{ background: 'rgba(0,0,0,0.3)', padding: '1px 6px', borderRadius: 4 }}>supabase/schema.sql</code> to create your tables.
+          ⚙️ <strong>Setup Required:</strong> Add your Supabase credentials to <code style={{ background: 'rgba(0,0,0,0.06)', padding: '2px 8px', borderRadius: 4, color: '#634707' }}>.env.local</code> to connect the database. See <code style={{ background: 'rgba(0,0,0,0.06)', padding: '2px 8px', borderRadius: 4, color: '#634707' }}>supabase/schema.sql</code> to create your tables.
         </div>
       )}
       <Navigation active={activePage} onChange={setActivePage} />
