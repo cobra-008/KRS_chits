@@ -1,0 +1,424 @@
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { Plus, Trash2, Printer, Save, ChevronDown } from 'lucide-react'
+import { format } from 'date-fns'
+import toast from 'react-hot-toast'
+import { calcFine } from '../lib/silverCalc'
+import { customersApi, vouchersApi } from '../lib/api'
+
+const emptyLot = () => ({
+  _key: Math.random().toString(36).slice(2),
+  patla_no: '',
+  weight_g: '',
+  tunch_pct: '',
+  raw_fine_g: 0,
+  pure_g: 0,
+})
+
+export default function VoucherPage({ type = 'receipt' }) {
+  const isReceipt = type === 'receipt'
+
+  const [customers, setCustomers] = useState([])
+  const [customerId, setCustomerId] = useState('')
+  const [voucherDate, setVoucherDate] = useState(format(new Date(), 'yyyy-MM-dd'))
+  const [lots, setLots] = useState([emptyLot()])
+  const [saving, setSaving] = useState(false)
+  const [savedVoucher, setSavedVoucher] = useState(null)
+  const printRef = useRef(null)
+
+  useEffect(() => {
+    customersApi.getAll().then(setCustomers).catch(() => toast.error('Failed to load customers'))
+  }, [])
+
+  const selectedCustomer = customers.find(c => c.id === customerId)
+
+  /* ── Lot Calculations ── */
+  const updateLot = useCallback((key, field, value) => {
+    setLots(prev => prev.map(lot => {
+      if (lot._key !== key) return lot
+      const updated = { ...lot, [field]: value }
+      const w = parseFloat(updated.weight_g) || 0
+      const t = parseFloat(updated.tunch_pct) || 0
+      const { rawFine, pure } = calcFine(w, t)
+      return { ...updated, raw_fine_g: rawFine, pure_g: pure }
+    }))
+  }, [])
+
+  const addLot = () => setLots(prev => [...prev, emptyLot()])
+
+  const removeLot = (key) => {
+    if (lots.length === 1) return
+    setLots(prev => prev.filter(l => l._key !== key))
+  }
+
+  const totalWeight = lots.reduce((s, l) => s + (parseFloat(l.weight_g) || 0), 0)
+  const totalPure = lots.reduce((s, l) => s + (l.pure_g || 0), 0)
+
+  /* ── Save ── */
+  const handleSave = async () => {
+    if (!customerId) { toast.error('Please select a customer'); return }
+    if (!lots.some(l => l.weight_g && l.tunch_pct)) {
+      toast.error('Please enter at least one complete lot'); return
+    }
+
+    const validLots = lots.filter(l => l.weight_g && l.tunch_pct)
+
+    setSaving(true)
+    try {
+      let voucher
+      if (isReceipt) {
+        voucher = await vouchersApi.createReceipt({
+          customerId,
+          voucherDate,
+          lots: validLots,
+        })
+      } else {
+        voucher = await vouchersApi.createIssue({
+          customerId,
+          voucherDate,
+          lots: validLots,
+        })
+      }
+
+      toast.success(`${isReceipt ? 'Receipt' : 'Issue'} Voucher #${voucher.voucher_no} saved!`)
+      setSavedVoucher({ ...voucher, lots: validLots, customer: selectedCustomer })
+
+      // Reset form
+      setLots([emptyLot()])
+      setCustomerId('')
+      setVoucherDate(format(new Date(), 'yyyy-MM-dd'))
+    } catch (err) {
+      toast.error(err.message || 'Failed to save voucher')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  /* ── Print ── */
+  const handlePrint = () => {
+    if (!savedVoucher) { toast.error('Save the voucher first to print'); return }
+    window.print()
+  }
+
+  return (
+    <div className="page">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">
+            {isReceipt ? 'Receipt Voucher' : 'Issue Voucher'}
+          </h1>
+          <p className="page-sub">
+            {isReceipt
+              ? 'Record incoming silver — auto-posts to inventory & customer account'
+              : 'Record outgoing silver — auto-deducts from inventory & customer account'
+            }
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <button id="btn-print-voucher" className="btn btn-ghost" onClick={handlePrint}>
+            <Printer /> Print
+          </button>
+          <button
+            id="btn-save-voucher"
+            className="btn btn-gold"
+            onClick={handleSave}
+            disabled={saving}
+          >
+            {saving ? <><div className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} /> Saving…</> : <><Save /> Save Voucher</>}
+          </button>
+        </div>
+      </div>
+
+      <div className="card card-gold">
+        {/* Voucher meta row */}
+        <div className="flex gap-4 mb-5" style={{ flexWrap: 'wrap', alignItems: 'flex-end' }}>
+          {/* Voucher # (auto) */}
+          <div className="form-group" style={{ minWidth: 120 }}>
+            <label className="form-label">Voucher No.</label>
+            <div style={{
+              background: 'var(--clr-surface-3)',
+              border: '1px solid var(--clr-gold-dim)',
+              borderRadius: 'var(--r-sm)',
+              padding: '7px 12px',
+              color: 'var(--clr-gold)',
+              fontSize: '0.9rem',
+              fontWeight: 700,
+            }}>
+              {savedVoucher ? `#${savedVoucher.voucher_no}` : 'Auto'}
+            </div>
+          </div>
+
+          {/* Customer */}
+          <div className="form-group" style={{ flex: 2, minWidth: 200 }}>
+            <label className="form-label" htmlFor="voucher-customer">Customer Name</label>
+            <select
+              id="voucher-customer"
+              className="form-control"
+              value={customerId}
+              onChange={e => setCustomerId(e.target.value)}
+            >
+              <option value="">— Select Customer —</option>
+              {customers.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Date */}
+          <div className="form-group" style={{ minWidth: 160, marginLeft: 'auto' }}>
+            <label className="form-label" htmlFor="voucher-date">Date</label>
+            <input
+              id="voucher-date"
+              type="date"
+              className="form-control"
+              value={voucherDate}
+              onChange={e => setVoucherDate(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {/* Lots table */}
+        <div className="table-wrap mb-4">
+          <table>
+            <thead>
+              <tr>
+                <th style={{ width: 48 }}>#</th>
+                <th style={{ minWidth: 110 }}>Patla / Kacha No.</th>
+                <th style={{ minWidth: 120 }}>Weight (g)</th>
+                <th style={{ minWidth: 100 }}>Tunch (%)</th>
+                <th style={{ minWidth: 110 }}>Raw Fine (g)</th>
+                <th style={{ minWidth: 100, color: 'var(--clr-gold)' }}>Pure (g)</th>
+                <th style={{ width: 40 }}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {lots.map((lot, idx) => (
+                <LotRow
+                  key={lot._key}
+                  lot={lot}
+                  index={idx}
+                  onChange={updateLot}
+                  onRemove={removeLot}
+                  onAddNext={addLot}
+                  canRemove={lots.length > 1}
+                />
+              ))}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colSpan={2} />
+                <td>
+                  <span className="font-mono">
+                    {totalWeight.toLocaleString('en-IN', { maximumFractionDigits: 3 })} g
+                  </span>
+                </td>
+                <td />
+                <td />
+                <td style={{ color: 'var(--clr-gold)', fontSize: '1rem' }}>
+                  <strong className="font-mono">
+                    {totalPure.toLocaleString('en-IN')} g
+                  </strong>
+                </td>
+                <td />
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <button
+            id="btn-add-lot"
+            className="btn btn-ghost btn-sm"
+            onClick={addLot}
+          >
+            <Plus /> Add Lot
+          </button>
+
+          <div style={{ fontSize: '0.8rem', color: 'var(--clr-text-muted)' }}>
+            Rounding: ≤0.69 → 0 · ≥0.70 → +1
+          </div>
+        </div>
+      </div>
+
+      {/* Saved voucher printable area */}
+      {savedVoucher && (
+        <div className="card mt-6" style={{ borderColor: 'var(--clr-success)' }}>
+          <div className="alert alert-success mb-4">
+            Voucher #{savedVoucher.voucher_no} saved successfully and
+            {isReceipt ? ' added to inventory & customer account.' : ' removed from inventory & debited from account.'}
+          </div>
+          <PrintableVoucher voucher={savedVoucher} type={type} ref={printRef} />
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ── Individual Lot Row ── */
+function LotRow({ lot, index, onChange, onRemove, onAddNext, canRemove }) {
+  const tunchRef = useRef(null)
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && e.target === tunchRef.current) {
+      onAddNext()
+    }
+  }
+
+  return (
+    <tr>
+      <td>
+        <span className="badge badge-gray">{index + 1}</span>
+      </td>
+      <td>
+        <input
+          className="table-input"
+          style={{ minWidth: 100 }}
+          placeholder="Bar ID"
+          value={lot.patla_no}
+          onChange={e => onChange(lot._key, 'patla_no', e.target.value)}
+        />
+      </td>
+      <td>
+        <input
+          className="table-input"
+          style={{ minWidth: 110 }}
+          type="number"
+          step="any"
+          min="0"
+          placeholder="0.000"
+          value={lot.weight_g}
+          onChange={e => onChange(lot._key, 'weight_g', e.target.value)}
+        />
+      </td>
+      <td>
+        <input
+          ref={tunchRef}
+          className="table-input"
+          style={{ minWidth: 90 }}
+          type="number"
+          step="any"
+          min="0"
+          max="100"
+          placeholder="0.000"
+          value={lot.tunch_pct}
+          onChange={e => onChange(lot._key, 'tunch_pct', e.target.value)}
+          onKeyDown={handleKeyDown}
+        />
+      </td>
+      <td className="font-mono text-secondary">
+        {lot.raw_fine_g ? lot.raw_fine_g.toFixed(3) : '—'}
+      </td>
+      <td>
+        <span
+          className="font-mono font-semibold"
+          style={{ color: 'var(--clr-gold)' }}
+        >
+          {lot.pure_g > 0 ? lot.pure_g.toLocaleString('en-IN') : '—'}
+        </span>
+      </td>
+      <td>
+        {canRemove && (
+          <button
+            className="btn btn-maroon btn-sm btn-icon"
+            onClick={() => onRemove(lot._key)}
+            title="Remove lot"
+          >
+            <Trash2 size={12} />
+          </button>
+        )}
+      </td>
+    </tr>
+  )
+}
+
+/* ── Printable Voucher ── */
+function PrintableVoucher({ voucher, type }) {
+  const isReceipt = type === 'receipt'
+  const prefix = isReceipt ? 'RV' : 'IV'
+
+  return (
+    <div id="voucher-print-area" style={{
+      fontFamily: 'serif',
+      fontSize: '0.85rem',
+      lineHeight: 1.5,
+    }}>
+      {/* Print styles injected via CSS @media print in index.css */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+        <div>
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.3rem', fontWeight: 700, color: 'var(--clr-gold)' }}>
+            K R S SILVERS
+          </div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--clr-text-muted)', marginTop: 2 }}>
+            {isReceipt ? 'RECEIPT VOUCHER' : 'ISSUE VOUCHER'}
+          </div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontWeight: 700, fontSize: '1rem' }}>#{prefix}-{String(voucher.voucher_no).padStart(4, '0')}</div>
+          <div style={{ color: 'var(--clr-text-muted)', fontSize: '0.78rem' }}>
+            {format(new Date(voucher.voucher_date || voucher.created_at), 'dd MMM yyyy')}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 12, fontSize: '0.83rem' }}>
+        <span className="text-muted">Customer: </span>
+        <strong>{voucher.customer?.name || '—'}</strong>
+      </div>
+
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Patla / Kacha No.</th>
+              <th>Weight (g)</th>
+              <th>Tunch (%)</th>
+              <th>Pure Fine (g)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {voucher.lots?.map((l, i) => (
+              <tr key={i}>
+                <td>{i + 1}</td>
+                <td>{l.patla_no || '—'}</td>
+                <td className="font-mono">{parseFloat(l.weight_g).toLocaleString('en-IN', { maximumFractionDigits: 3 })}</td>
+                <td className="font-mono">{parseFloat(l.tunch_pct).toFixed(3)}</td>
+                <td className="font-mono font-semibold" style={{ color: 'var(--clr-gold)' }}>
+                  {parseFloat(l.pure_g).toLocaleString('en-IN')}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colSpan={2}><strong>TOTAL</strong></td>
+              <td className="font-mono">
+                {voucher.lots?.reduce((s,l) => s+(parseFloat(l.weight_g)||0),0)
+                  .toLocaleString('en-IN', { maximumFractionDigits: 3 })} g
+              </td>
+              <td />
+              <td className="font-mono" style={{ color: 'var(--clr-gold)' }}>
+                <strong>
+                  {voucher.lots?.reduce((s,l) => s+(parseFloat(l.pure_g)||0),0)
+                    .toLocaleString('en-IN')} g
+                </strong>
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 40, paddingTop: 12, borderTop: '1px solid var(--clr-border)' }}>
+        <div style={{ textAlign: 'center', width: 160 }}>
+          <div style={{ borderTop: '1px solid var(--clr-text-muted)', paddingTop: 8, marginTop: 32, fontSize: '0.78rem', color: 'var(--clr-text-muted)' }}>
+            Customer Signature
+          </div>
+        </div>
+        <div style={{ textAlign: 'center', width: 160 }}>
+          <div style={{ borderTop: '1px solid var(--clr-text-muted)', paddingTop: 8, marginTop: 32, fontSize: '0.78rem', color: 'var(--clr-text-muted)' }}>
+            Authorized Signatory
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
