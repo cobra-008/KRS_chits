@@ -13,21 +13,15 @@ import OutstandingPage from './pages/OutstandingPage'
 import TransactionsPage from './pages/TransactionsPage'
 
 export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return sessionStorage.getItem('krs_auth') === 'true' || localStorage.getItem('krs_auth') === 'true'
-  })
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [activePage, setActivePage] = useState('home')
   const [issueSelectedIds, setIssueSelectedIds] = useState([])
 
   const handleLogin = () => {
-    sessionStorage.setItem('krs_auth', 'true')
-    localStorage.setItem('krs_auth', 'true')
     setIsAuthenticated(true)
   }
 
   const handleLogout = () => {
-    sessionStorage.removeItem('krs_auth')
-    localStorage.removeItem('krs_auth')
     setIsAuthenticated(false)
   }
 

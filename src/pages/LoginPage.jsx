@@ -9,7 +9,7 @@ export default function LoginPage({ onLogin }) {
   const [error, setError] = useState(false)
   const [shake, setShake] = useState(false)
 
-  const expectedPassword = import.meta.env.VITE_APP_PASSWORD || 'ArjunKRS'
+  const expectedPassword = (import.meta.env.VITE_APP_PASSWORD || 'ArjunKRS').trim()
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -18,7 +18,7 @@ export default function LoginPage({ onLogin }) {
       return
     }
 
-    if (password === expectedPassword) {
+    if (password.trim() === expectedPassword) {
       toast.success('Access granted — Welcome to K R S Silvers')
       setError(false)
       onLogin()
