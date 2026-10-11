@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
 import KRSLogo from './KRSLogo'
 
-export default function Header() {
+import { Lock } from 'lucide-react'
+
+export default function Header({ onLogout }) {
   const [time, setTime] = useState(new Date())
 
   useEffect(() => {
@@ -30,6 +32,18 @@ export default function Header() {
             {format(time, 'hh:mm:ss aa')}
           </div>
         </div>
+
+        {onLogout && (
+          <button
+            id="btn-lock-system"
+            className="btn btn-ghost btn-sm"
+            onClick={onLogout}
+            title="Lock system / Logout"
+            style={{ marginLeft: 6, gap: 6 }}
+          >
+            <Lock size={13} /> Lock
+          </button>
+        )}
       </div>
     </header>
   )

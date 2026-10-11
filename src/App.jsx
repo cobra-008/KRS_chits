@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Header from './components/Header'
 import Navigation from './components/Navigation'
 import { isDemoMode } from './lib/supabase'
+import LoginPage from './pages/LoginPage'
 import HomePage from './pages/HomePage'
 import VoucherPage from './pages/VoucherPage'
 import IssueVoucherPage from './pages/IssueVoucherPage'
@@ -12,14 +13,33 @@ import OutstandingPage from './pages/OutstandingPage'
 import TransactionsPage from './pages/TransactionsPage'
 
 export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return sessionStorage.getItem('krs_auth') === 'true' || localStorage.getItem('krs_auth') === 'true'
+  })
   const [activePage, setActivePage] = useState('home')
   const [issueSelectedIds, setIssueSelectedIds] = useState([])
+
+  const handleLogin = () => {
+    sessionStorage.setItem('krs_auth', 'true')
+    localStorage.setItem('krs_auth', 'true')
+    setIsAuthenticated(true)
+  }
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('krs_auth')
+    localStorage.removeItem('krs_auth')
+    setIsAuthenticated(false)
+  }
 
   const handleNavigate = (page, data) => {
     if (page === 'issue') {
       setIssueSelectedIds(Array.isArray(data) ? data : [])
     }
     setActivePage(page)
+  }
+
+  if (!isAuthenticated) {
+    return <LoginPage onLogin={handleLogin} />
   }
 
   const renderPage = () => {
@@ -38,7 +58,7 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <Header />
+      <Header onLogout={handleLogout} />
       {isDemoMode && (
         <div style={{
           background: 'linear-gradient(90deg, #FBF8EE 0%, #F6EEDB 100%)',
