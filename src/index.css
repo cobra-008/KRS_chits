@@ -499,6 +499,28 @@ select.form-control {
 .form-grid-2 { grid-template-columns: 1fr 1fr; }
 .form-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
 
+/* ── Specialized Responsive Grids ── */
+.voucher-meta-grid {
+  display: grid;
+  grid-template-columns: 140px 1fr 180px;
+  gap: 20px;
+  align-items: flex-end;
+  margin-bottom: 24px;
+}
+
+.issue-voucher-layout {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 28px;
+  align-items: start;
+}
+
+.group-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 /* ── Decongested Tables: Spacious Rows & Clean Silver Theme ─ */
 .table-wrap {
   overflow-x: auto;
@@ -1023,29 +1045,379 @@ tfoot td {
 .ledger-excess  { color: var(--clr-success-text); font-weight: 700; }
 .ledger-settled { color: var(--clr-text-muted);   }
 
-/* ── Responsive Breakpoints ──────────────────────────────── */
-@media (max-width: 992px) {
-  .page { padding: 24px 20px; }
-  .header { padding: 0 20px; height: 64px; }
+/* ── Login Card ──────────────────────────────────────────── */
+.login-card {
+  width: 100%;
+  max-width: 440px;
+  padding: 44px 38px;
+  box-shadow: 0 20px 50px -10px rgba(18, 24, 38, 0.12), 0 1px 3px rgba(18, 24, 38, 0.05);
+  border: 1.5px solid var(--clr-border);
+  border-radius: 24px;
+  background: #FFFFFF;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Transactions Filter Bar ─────────────────────────────── */
+.txn-filter-bar {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+.txn-filter-bar .form-group {
+  flex: 1;
+  min-width: 160px;
+}
+.txn-filter-bar .form-group.search-group {
+  flex: 2;
+  min-width: 200px;
+}
+.txn-filter-bar .actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* ── Voucher Print Meta Grid ─────────────────────────────── */
+.voucher-print-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  background: #F8FAFC;
+  border-radius: 8px;
+  border: 1px solid #E2E8F0;
+}
+
+/* ── Comprehensive Responsive Breakpoints ────────────────── */
+
+/* Tablet & Smaller Laptops */
+@media (max-width: 1024px) {
+  .page { padding: 24px 20px 48px 20px; }
+  .header { padding: 0 20px; height: 66px; }
   .nav { padding: 0 16px; }
   .card { padding: 24px 20px; }
+  .issue-voucher-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
 }
 
+/* Tablet & Mobile Landscape */
 @media (max-width: 768px) {
-  .stat-grid-4 { grid-template-columns: 1fr 1fr; }
-  .stat-grid-3 { grid-template-columns: 1fr 1fr; }
-  .form-grid-3 { grid-template-columns: 1fr 1fr; }
-  .page { padding: 18px 14px; }
-  .modal-body { padding: 20px; }
-  .modal-header, .modal-footer { padding: 16px 20px; }
+  .header {
+    height: 62px;
+    padding: 0 16px;
+  }
+  .header-logo {
+    width: 38px;
+    height: 38px;
+  }
+  .header-title {
+    font-size: 1.2rem;
+  }
+  .live-clock-date {
+    display: none;
+  }
+  .live-clock-time {
+    font-size: 0.92rem;
+  }
+
+  .nav {
+    padding: 0 10px;
+    gap: 3px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-wrap: nowrap;
+  }
+  .nav::-webkit-scrollbar {
+    display: none;
+  }
+  .nav-btn {
+    padding: 11px 13px;
+    font-size: 0.82rem;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .nav-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .page {
+    padding: 20px 16px 48px 16px;
+  }
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 22px;
+  }
+  .page-header > div:last-child {
+    width: 100%;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .page-header > div:last-child .btn {
+    flex: 1;
+    justify-content: center;
+  }
+  .page-title {
+    font-size: 1.45rem;
+  }
+
+  .card {
+    padding: 20px 16px;
+    border-radius: 14px;
+  }
+  .card-header {
+    margin-bottom: 18px;
+    padding-bottom: 14px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* Responsive tables with touch scrolling */
+  .table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .table-wrap table {
+    min-width: 580px;
+  }
+  thead th {
+    padding: 11px 12px;
+    font-size: 0.72rem;
+  }
+  tbody td {
+    padding: 12px 12px;
+    font-size: 0.83rem;
+  }
+  tfoot td {
+    padding: 13px 12px;
+    font-size: 0.85rem;
+  }
+
+  .voucher-meta-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+
+  .stat-grid-4, .stat-grid-3, .stat-grid-2 {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .stat-card {
+    padding: 18px 18px;
+  }
+  .stat-value {
+    font-size: 1.4rem;
+  }
+
+  .form-grid-3 {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .form-grid-2 {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .modal-backdrop {
+    padding: 14px;
+  }
+  .modal {
+    max-height: 94vh;
+    border-radius: 16px;
+  }
+  .modal-body {
+    padding: 20px 18px;
+  }
+  .modal-header {
+    padding: 18px 20px;
+  }
+  .modal-footer {
+    padding: 14px 20px;
+    gap: 10px;
+  }
 }
 
-@media (max-width: 480px) {
-  .stat-grid-4 { grid-template-columns: 1fr; }
-  .stat-grid-3 { grid-template-columns: 1fr; }
-  .stat-grid-2 { grid-template-columns: 1fr; }
-  .form-grid-2 { grid-template-columns: 1fr; }
-  .form-grid-3 { grid-template-columns: 1fr; }
+/* Mobile Phones (Standard & Compact) */
+@media (max-width: 640px) {
+  .header {
+    height: 58px;
+    padding: 0 12px;
+  }
+  .header-logo {
+    width: 34px;
+    height: 34px;
+  }
+  .header-title {
+    font-size: 1.1rem;
+    letter-spacing: 0.04em;
+  }
+  .header-sub {
+    display: none;
+  }
+  .header-right {
+    gap: 6px;
+  }
+  .pulse-dot {
+    display: none;
+  }
+  .live-clock {
+    padding: 2px 6px;
+  }
+  .live-clock-time {
+    font-size: 0.84rem;
+  }
+  #btn-lock-system {
+    padding: 5px 8px;
+    font-size: 0.74rem;
+  }
+
+  .page {
+    padding: 14px 12px 48px 12px;
+  }
+  .page-title {
+    font-size: 1.3rem;
+  }
+  .page-sub {
+    font-size: 0.78rem;
+  }
+
+  .card {
+    padding: 16px 12px;
+    border-radius: 12px;
+  }
+
+  .btn {
+    padding: 9px 14px;
+    font-size: 0.82rem;
+  }
+  .btn-sm {
+    padding: 6px 11px;
+    font-size: 0.76rem;
+  }
+
+  .quick-btn-row {
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+  .quick-btn-row .btn {
+    flex: 1 1 calc(50% - 8px);
+    justify-content: center;
+  }
+
+  /* Group cards on mobile */
+  .group-card-header {
+    padding: 14px 12px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .group-badge {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+    border-radius: 8px;
+  }
+  .group-card-actions {
+    width: 100%;
+    justify-content: space-between;
+    padding-top: 10px;
+    border-top: 1px dashed var(--clr-border-soft);
+  }
+
+  /* Modals on mobile */
+  .modal-backdrop {
+    padding: 8px;
+  }
+  .modal {
+    max-height: 96vh;
+    border-radius: 14px;
+  }
+  .modal-header {
+    padding: 14px 16px;
+  }
+  .modal-title {
+    font-size: 1.05rem;
+  }
+  .modal-body {
+    padding: 16px 14px;
+  }
+  .modal-footer {
+    padding: 12px 14px;
+    flex-wrap: wrap;
+  }
+  .modal-footer .btn {
+    flex: 1;
+    justify-content: center;
+  }
+
+  /* Login card on mobile */
+  .login-card {
+    padding: 30px 18px;
+    border-radius: 18px;
+    max-width: 100%;
+  }
+
+  /* Transaction filters stacked full-width on mobile */
+  .txn-filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .txn-filter-bar .form-group,
+  .txn-filter-bar .form-group.search-group {
+    width: 100%;
+    min-width: 0;
+  }
+  .txn-filter-bar .actions {
+    width: 100%;
+  }
+  .txn-filter-bar .actions .btn {
+    flex: 1;
+    justify-content: center;
+  }
+
+  /* Voucher print metadata stacked on mobile */
+  .voucher-print-meta-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 12px 14px;
+  }
+  .voucher-print-meta-grid > div:last-child {
+    text-align: left !important;
+  }
+
+  /* Printable vouchers padding on mobile */
+  .voucher-print {
+    padding: 16px 12px !important;
+  }
+
+  /* Calculation rows breathing room on mobile */
+  .calc-row {
+    font-size: 0.82rem;
+    padding: 9px 0;
+    gap: 10px;
+  }
+  .calc-row span:first-child {
+    max-width: 65%;
+  }
+
+  /* Touch input sizing to prevent iOS zoom */
+  .form-control,
+  .table-input {
+    font-size: 15px;
+    min-height: 40px;
+  }
 }
 
 /* ── Shake Animation (Login / Error) ──────────────────────── */

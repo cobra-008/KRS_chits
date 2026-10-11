@@ -73,8 +73,8 @@ export default function TransactionsPage() {
 
       {/* Filters */}
       <div className="card mb-5">
-        <div className="flex gap-3" style={{ flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <div className="form-group" style={{ flex: 1, minWidth: 160 }}>
+        <div className="txn-filter-bar">
+          <div className="form-group">
             <label className="form-label">Date</label>
             <input
               id="txn-filter-date"
@@ -85,7 +85,7 @@ export default function TransactionsPage() {
             />
           </div>
 
-          <div className="form-group" style={{ flex: 1, minWidth: 160 }}>
+          <div className="form-group">
             <label className="form-label">Type</label>
             <select
               id="txn-filter-type"
@@ -100,7 +100,7 @@ export default function TransactionsPage() {
             </select>
           </div>
 
-          <div className="form-group" style={{ flex: 2, minWidth: 200 }}>
+          <div className="form-group search-group">
             <label className="form-label">Search</label>
             <div style={{ position: 'relative' }}>
               <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--clr-text-muted)' }} />
@@ -116,7 +116,7 @@ export default function TransactionsPage() {
             </div>
           </div>
 
-          <div className="flex gap-2">
+          <div className="actions">
             <button className="btn btn-gold btn-sm" onClick={load}>
               <Filter /> Filter
             </button>

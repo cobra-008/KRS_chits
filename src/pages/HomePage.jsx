@@ -190,7 +190,7 @@ export default function HomePage({ onNavigate }) {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                  <div className="group-card-actions" onClick={e => e.stopPropagation()}>
                     {/* Members count */}
                     <span className="badge badge-gray">
                       {groupMembers.length > 0 ? `${groupMembers.length}` : '0'} members

@@ -15,8 +15,8 @@ export default function Header({ onLogout }) {
   return (
     <header className="header">
       <div className="header-brand">
-        <KRSLogo size={46} />
-        <div>
+        <KRSLogo size={42} className="header-logo" />
+        <div className="header-brand-text">
           <div className="header-title">K R S SILVERS</div>
           <div className="header-sub">Bullion &amp; Chit Management</div>
         </div>

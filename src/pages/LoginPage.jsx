@@ -56,19 +56,7 @@ export default function LoginPage({ onLogin }) {
 
       {/* Login Card */}
       <div
-        className={`card ${shake ? 'shake-anim' : ''}`}
-        style={{
-          width: '100%',
-          maxWidth: 440,
-          padding: '44px 40px',
-          boxShadow: '0 20px 50px -10px rgba(18, 24, 38, 0.12), 0 1px 3px rgba(18, 24, 38, 0.05)',
-          border: '1.5px solid var(--clr-border)',
-          borderRadius: 24,
-          background: '#FFFFFF',
-          textAlign: 'center',
-          position: 'relative',
-          zIndex: 1,
-        }}
+        className={`login-card ${shake ? 'shake-anim' : ''}`}
       >
         {/* Brand Header */}
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>

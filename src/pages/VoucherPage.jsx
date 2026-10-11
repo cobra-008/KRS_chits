@@ -130,9 +130,9 @@ export default function VoucherPage({ type = 'receipt' }) {
 
       <div className="card card-gold">
         {/* Voucher meta row */}
-        <div className="flex gap-6 mb-6" style={{ flexWrap: 'wrap', alignItems: 'flex-end', rowGap: 20 }}>
+        <div className="voucher-meta-grid">
           {/* Voucher # (auto) */}
-          <div className="form-group" style={{ minWidth: 130 }}>
+          <div className="form-group">
             <label className="form-label">Voucher No.</label>
             <div style={{
               background: 'var(--clr-surface-2)',
@@ -149,7 +149,7 @@ export default function VoucherPage({ type = 'receipt' }) {
           </div>
 
           {/* Customer */}
-          <div className="form-group" style={{ flex: 2, minWidth: 240 }}>
+          <div className="form-group">
             <label className="form-label" htmlFor="voucher-customer">Customer Name</label>
             <select
               id="voucher-customer"
@@ -165,7 +165,7 @@ export default function VoucherPage({ type = 'receipt' }) {
           </div>
 
           {/* Date */}
-          <div className="form-group" style={{ minWidth: 180, marginLeft: 'auto' }}>
+          <div className="form-group">
             <label className="form-label" htmlFor="voucher-date">Date</label>
             <input
               id="voucher-date"

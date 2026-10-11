@@ -321,8 +321,8 @@ export default function IssueVoucherPage({ initialSelectedIds = [] }) {
         )}
       </div>
 
-      {/* Main Two-Column Workflow */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 28, alignItems: 'start' }}>
+      {/* Main Responsive Workflow Layout */}
+      <div className="issue-voucher-layout">
         
         {/* LEFT COLUMN: Available Vault Stock Picker */}
         <div className="card">
@@ -662,7 +662,7 @@ function IssueVoucherPrintView({ voucher }) {
       </div>
 
       {/* Recipient Details */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20, padding: '12px 16px', background: '#F8FAFC', borderRadius: 8, border: '1px solid #E2E8F0' }}>
+      <div className="voucher-print-meta-grid">
         <div>
           <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#64748B', fontWeight: 600 }}>Issued To (Member/Customer):</span>
           <div style={{ fontWeight: 700, fontSize: '1rem', color: '#111827', marginTop: 2 }}>
@@ -684,46 +684,48 @@ function IssueVoucherPrintView({ voucher }) {
       </div>
 
       {/* Lots Table */}
-      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 24, fontSize: '0.86rem' }}>
-        <thead>
-          <tr style={{ background: '#F1F5F9', borderBottom: '1.5px solid #CBD5E1' }}>
-            <th style={{ padding: '10px 12px', textAlign: 'left', width: 40 }}>#</th>
-            <th style={{ padding: '10px 12px', textAlign: 'left' }}>Patla / Kacha No</th>
-            <th style={{ padding: '10px 12px', textAlign: 'right' }}>Gross Weight (g)</th>
-            <th style={{ padding: '10px 12px', textAlign: 'right' }}>Tunch (%)</th>
-            <th style={{ padding: '10px 12px', textAlign: 'right', color: '#B3861B' }}>Pure Silver (g)</th>
-          </tr>
-        </thead>
-        <tbody>
-          {lots.map((l, i) => (
-            <tr key={i} style={{ borderBottom: '1px solid #E2E8F0' }}>
-              <td style={{ padding: '10px 12px', color: '#64748B' }}>{i + 1}</td>
-              <td style={{ padding: '10px 12px', fontWeight: 600 }}>{l.patla_no}</td>
-              <td style={{ padding: '10px 12px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                {parseFloat(l.weight_g).toLocaleString('en-IN', { maximumFractionDigits: 3 })}
+      <div className="table-wrap mb-6">
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.86rem' }}>
+          <thead>
+            <tr style={{ background: '#F1F5F9', borderBottom: '1.5px solid #CBD5E1' }}>
+              <th style={{ padding: '10px 12px', textAlign: 'left', width: 40 }}>#</th>
+              <th style={{ padding: '10px 12px', textAlign: 'left' }}>Patla / Kacha No</th>
+              <th style={{ padding: '10px 12px', textAlign: 'right' }}>Gross Weight (g)</th>
+              <th style={{ padding: '10px 12px', textAlign: 'right' }}>Tunch (%)</th>
+              <th style={{ padding: '10px 12px', textAlign: 'right', color: '#B3861B' }}>Pure Silver (g)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {lots.map((l, i) => (
+              <tr key={i} style={{ borderBottom: '1px solid #E2E8F0' }}>
+                <td style={{ padding: '10px 12px', color: '#64748B' }}>{i + 1}</td>
+                <td style={{ padding: '10px 12px', fontWeight: 600 }}>{l.patla_no}</td>
+                <td style={{ padding: '10px 12px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                  {parseFloat(l.weight_g).toLocaleString('en-IN', { maximumFractionDigits: 3 })}
+                </td>
+                <td style={{ padding: '10px 12px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                  {parseFloat(l.tunch_pct).toFixed(3)}%
+                </td>
+                <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#B3861B', fontVariantNumeric: 'tabular-nums' }}>
+                  {parseFloat(l.pure_g).toLocaleString('en-IN')} g
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr style={{ background: '#F8FAFC', borderTop: '2px solid #CBD5E1' }}>
+              <td colSpan={2} style={{ padding: '12px', fontWeight: 700 }}>Total Silver Issued:</td>
+              <td style={{ padding: '12px', textAlign: 'right', fontWeight: 700 }}>
+                {totalWeight.toLocaleString('en-IN', { maximumFractionDigits: 3 })} g ({gramsToKg(totalWeight)} kg)
               </td>
-              <td style={{ padding: '10px 12px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                {parseFloat(l.tunch_pct).toFixed(3)}%
-              </td>
-              <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#B3861B', fontVariantNumeric: 'tabular-nums' }}>
-                {parseFloat(l.pure_g).toLocaleString('en-IN')} g
+              <td></td>
+              <td style={{ padding: '12px', textAlign: 'right', fontWeight: 800, fontSize: '1.05rem', color: '#B3861B' }}>
+                {totalPure.toLocaleString('en-IN')} g ({gramsToKg(totalPure)} kg)
               </td>
             </tr>
-          ))}
-        </tbody>
-        <tfoot>
-          <tr style={{ background: '#F8FAFC', borderTop: '2px solid #CBD5E1' }}>
-            <td colSpan={2} style={{ padding: '12px', fontWeight: 700 }}>Total Silver Issued:</td>
-            <td style={{ padding: '12px', textAlign: 'right', fontWeight: 700 }}>
-              {totalWeight.toLocaleString('en-IN', { maximumFractionDigits: 3 })} g ({gramsToKg(totalWeight)} kg)
-            </td>
-            <td></td>
-            <td style={{ padding: '12px', textAlign: 'right', fontWeight: 800, fontSize: '1.05rem', color: '#B3861B' }}>
-              {totalPure.toLocaleString('en-IN')} g ({gramsToKg(totalPure)} kg)
-            </td>
-          </tr>
-        </tfoot>
-      </table>
+          </tfoot>
+        </table>
+      </div>
 
       {/* Signatures */}
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 48, paddingTop: 16 }}>
