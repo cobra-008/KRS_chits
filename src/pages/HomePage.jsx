@@ -283,100 +283,45 @@ export default function HomePage({ onNavigate }) {
                         <div className="empty-state-title">{t('no_members_enrolled', 'No members enrolled')}</div>
                       </div>
                     ) : (
-                      <>
-                        <div className="table-wrap" style={{ borderRadius: 0, border: 'none', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-                          <table style={{ minWidth: 620 }}>
+                      <div className="table-wrap" style={{ borderRadius: 0, border: 'none', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                          <table style={{ minWidth: 320 }}>
                             <thead>
                               <tr>
-                                <th style={{ width: 70 }}>{t('th_ticket', 'Ticket')}</th>
-                                <th style={{ minWidth: 140 }}>{t('th_member', 'Member')}</th>
-                                <th style={{ minWidth: 100 }}>{t('th_phone', 'Phone')}</th>
-                                <th style={{ minWidth: 110 }}>{t('th_months_paid', 'Months Paid')}</th>
-                                <th style={{ minWidth: 110 }}>{t('th_fine_deposited', 'Fine Deposited')}</th>
-                                <th style={{ minWidth: 110 }}>{t('th_fine_demanded', 'Fine Demanded')}</th>
-                                <th style={{ minWidth: 95 }}>{t('th_status', 'Status')}</th>
-                                <th style={{ minWidth: 80 }}>{t('th_actions', 'Actions')}</th>
+                                <th style={{ width: 80 }}>{t('th_sno', 'S.No')}</th>
+                                <th style={{ width: 120 }}>{t('th_share_pct', 'Share %')}</th>
+                                <th>{t('th_name', 'Name')}</th>
                               </tr>
                             </thead>
                             <tbody>
-                              {groupMembers.map(member => {
-                                const { demanded, deposited, diff } = getMemberStatus(member, group, groupDraws)
-                                const isOverdue = diff < 0
-                                const isExcess  = diff > 0
-                                const isSettled = diff === 0
-
-                                return (
-                                  <tr
-                                    key={member.id}
-                                    style={{ cursor: 'pointer' }}
-                                    onDoubleClick={() => setLedgerCustomer(member.customers)}
-                                    title="Double-click to view full ledger"
-                                  >
-                                    <td>
-                                      <span className="badge badge-gold">#{member.ticket_no}</span>
-                                    </td>
-                                    <td>
-                                      <div className="flex items-center gap-2">
-                                        <div className="avatar" style={{ width: 28, height: 28, fontSize: '0.7rem' }}>
-                                          {member.customers?.photo_url
-                                            ? <img src={member.customers.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
-                                            : member.customers?.name?.[0]?.toUpperCase()
-                                          }
-                                        </div>
-                                        <span className="font-semibold">{member.customers?.name}</span>
-                                        {member.is_withdrawn && (
-                                          <span className="badge badge-maroon" style={{ fontSize: '0.65rem' }}>{t('badge_withdrawn', 'Withdrawn')}</span>
-                                        )}
-                                      </div>
-                                    </td>
-                                    <td className="text-secondary">{member.customers?.phone || '—'}</td>
-                                    <td>
-                                      <span className={isOverdue ? 'text-danger font-semibold' : 'text-secondary'}>
-                                        {group.months_happened} {t('happened_suffix', 'happened')}
-                                      </span>
-                                    </td>
-                                    <td className="font-mono">
-                                      {formatGrams(deposited)}
-                                    </td>
-                                    <td className="font-mono">
-                                      {formatGrams(demanded)}
-                                    </td>
-                                    <td>
-                                      {isOverdue ? (
-                                        <span className="badge badge-red">
-                                          {formatGrams(Math.abs(diff))} {t('badge_due', 'Due')}
+                              {groupMembers.map((member, idx) => (
+                                <tr
+                                  key={member.id}
+                                  style={{ cursor: 'pointer' }}
+                                  onDoubleClick={() => setLedgerCustomer(member.customers)}
+                                  title="Double-click to view ledger"
+                                >
+                                  <td>
+                                    <span className="badge badge-gold font-mono">#{member.ticket_no ?? (idx + 1)}</span>
+                                  </td>
+                                  <td>
+                                    <span className="badge badge-teal font-mono font-semibold">
+                                      {member.share_pct || 100}%
+                                    </span>
+                                  </td>
+                                  <td>
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-semibold">{member.customers?.name || '—'}</span>
+                                      {member.is_withdrawn && (
+                                        <span className="badge badge-maroon" style={{ fontSize: '0.65rem' }}>
+                                          {t('badge_withdrawn', 'Withdrawn')}
                                         </span>
-                                      ) : isExcess ? (
-                                        <span className="badge badge-green">
-                                          +{formatGrams(diff)} {t('badge_excess', 'Excess')}
-                                        </span>
-                                      ) : (
-                                        <span className="badge badge-gray">{t('badge_settled', 'Settled')}</span>
                                       )}
-                                    </td>
-                                    <td>
-                                      <div className="flex gap-1">
-                                        <button
-                                          className="btn btn-ghost btn-sm btn-icon"
-                                          title="Edit member"
-                                          onClick={(e) => { e.stopPropagation(); setEditMemberModal(member) }}
-                                        >
-                                        <Edit2 size={12} />
-                                      </button>
-                                      <button
-                                        className="btn btn-maroon btn-sm btn-icon"
-                                        title="Remove member"
-                                        onClick={(e) => { e.stopPropagation(); setRemoveMemberConfirm(member) }}
-                                      >
-                                        <Trash2 size={12} />
-                                      </button>
                                     </div>
                                   </td>
                                 </tr>
-                              )
-                            })}
-                          </tbody>
-                        </table>
+                              ))}
+                            </tbody>
+                          </table>
                       </div>
                     )}
                   </div>

@@ -6,6 +6,40 @@
 import { supabase } from './supabase'
 
 // ─────────────────────────────────────
+// LOCAL METADATA HELPERS (Fallback cache)
+// ─────────────────────────────────────
+function getLocalShares() {
+  try { return JSON.parse(localStorage.getItem('krs_member_shares') || '{}') } catch { return {} }
+}
+function setMemberShareLocal(memberId, sharePct) {
+  try {
+    const s = getLocalShares()
+    s[memberId] = Number(sharePct) || 100
+    localStorage.setItem('krs_member_shares', JSON.stringify(s))
+  } catch {}
+}
+
+export function decodeInventoryItem(item) {
+  if (!item) return item
+  let silverType = item.silver_type || 'K'
+  let sourceName = item.source_name || 'Direct'
+  
+  if (item.description) {
+    const typeMatch = item.description.match(/\[TYPE:([KPB])\]/i)
+    if (typeMatch) silverType = typeMatch[1].toUpperCase()
+
+    const srcMatch = item.description.match(/\[SRC:([^\]]+)\]/i)
+    if (srcMatch) sourceName = srcMatch[1]
+  }
+
+  return {
+    ...item,
+    silver_type: silverType,
+    source_name: sourceName,
+  }
+}
+
+// ─────────────────────────────────────
 // CUSTOMERS
 // ─────────────────────────────────────
 export const customersApi = {
@@ -120,7 +154,11 @@ export const membersApi = {
       .eq('group_id', groupId)
       .order('ticket_no')
     if (error) throw error
-    return data
+    const localShares = getLocalShares()
+    return (data || []).map(m => ({
+      ...m,
+      share_pct: m.share_pct ? Number(m.share_pct) : (localShares[m.id] || 100),
+    }))
   },
 
   async getByCustomer(customerId) {
@@ -132,28 +170,75 @@ export const membersApi = {
       `)
       .eq('customer_id', customerId)
     if (error) throw error
-    return data
+    const localShares = getLocalShares()
+    return (data || []).map(m => ({
+      ...m,
+      share_pct: m.share_pct ? Number(m.share_pct) : (localShares[m.id] || 100),
+    }))
   },
 
   async create(payload) {
+    const sharePct = Number(payload.share_pct) || 100
+    
+    // First try standard insert with share_pct
     const { data, error } = await supabase
       .from('group_members')
-      .insert(payload)
+      .insert({ ...payload, share_pct: sharePct })
       .select()
       .single()
-    if (error) throw error
-    return data
+
+    if (!error) {
+      setMemberShareLocal(data.id, sharePct)
+      return { ...data, share_pct: sharePct }
+    }
+
+    // Fallback if column share_pct does not exist in schema cache
+    if (error.code === 'PGRST204' || error.message?.includes('share_pct')) {
+      const cleanPayload = { ...payload }
+      delete cleanPayload.share_pct
+      const { data: d2, error: e2 } = await supabase
+        .from('group_members')
+        .insert(cleanPayload)
+        .select()
+        .single()
+      if (e2) throw e2
+      setMemberShareLocal(d2.id, sharePct)
+      return { ...d2, share_pct: sharePct }
+    }
+
+    throw error
   },
 
   async update(id, payload) {
+    const sharePct = payload.share_pct ? Number(payload.share_pct) : undefined
     const { data, error } = await supabase
       .from('group_members')
       .update(payload)
       .eq('id', id)
       .select()
       .single()
-    if (error) throw error
-    return data
+
+    if (!error) {
+      if (sharePct) setMemberShareLocal(id, sharePct)
+      return { ...data, share_pct: sharePct || getLocalShares()[id] || 100 }
+    }
+
+    // Fallback if share_pct column not found
+    if (error.code === 'PGRST204' || error.message?.includes('share_pct')) {
+      const cleanPayload = { ...payload }
+      delete cleanPayload.share_pct
+      const { data: d2, error: e2 } = await supabase
+        .from('group_members')
+        .update(cleanPayload)
+        .eq('id', id)
+        .select()
+        .single()
+      if (e2) throw e2
+      if (sharePct) setMemberShareLocal(id, sharePct)
+      return { ...d2, share_pct: sharePct || getLocalShares()[id] || 100 }
+    }
+
+    throw error
   },
 
   async delete(id) {
@@ -237,22 +322,58 @@ export const vouchersApi = {
       tunch_pct: l.tunch_pct,
       raw_fine_g: l.raw_fine_g,
       pure_g: l.pure_g,
+      silver_type: l.silver_type || 'K',
     }))
+    
+    // Try insert lots with silver_type
     const { error: lErr } = await supabase.from('voucher_lots').insert(lotsPayload)
-    if (lErr) throw lErr
+    if (lErr && (lErr.code === 'PGRST204' || lErr.message?.includes('silver_type'))) {
+      const cleanLots = lotsPayload.map(lp => {
+        const copy = { ...lp }
+        delete copy.silver_type
+        return copy
+      })
+      await supabase.from('voucher_lots').insert(cleanLots)
+    } else if (lErr) {
+      throw lErr
+    }
 
     // 3. Add to inventory
-    const inventoryPayload = lots.map(l => ({
-      patla_no: l.patla_no || `KRS-${Date.now()}`,
-      description: `From Voucher #${voucher.voucher_no}`,
-      weight_g: l.weight_g,
-      tunch_pct: l.tunch_pct,
-      pure_g: l.pure_g,
-      status: 'in_stock',
-      source_voucher_id: voucher.id,
-    }))
+    // Get customer name for source tracking
+    let custName = 'Direct'
+    if (customerId) {
+      const { data: cust } = await supabase.from('customers').select('name').eq('id', customerId).single()
+      if (cust?.name) custName = cust.name
+    }
+
+    const inventoryPayload = lots.map(l => {
+      const sType = l.silver_type || 'K'
+      const tag = `[TYPE:${sType}|SRC:${custName}]`
+      return {
+        patla_no: l.patla_no || `KRS-${Date.now()}`,
+        description: `From Voucher #${voucher.voucher_no} ${tag}`,
+        weight_g: l.weight_g,
+        tunch_pct: l.tunch_pct,
+        pure_g: l.pure_g,
+        status: 'in_stock',
+        source_voucher_id: voucher.id,
+        silver_type: sType,
+        source_name: custName,
+      }
+    })
+
     const { error: iErr } = await supabase.from('inventory').insert(inventoryPayload)
-    if (iErr) throw iErr
+    if (iErr && (iErr.code === 'PGRST204' || iErr.message?.includes('silver_type') || iErr.message?.includes('source_name'))) {
+      const cleanInv = inventoryPayload.map(ip => {
+        const copy = { ...ip }
+        delete copy.silver_type
+        delete copy.source_name
+        return copy
+      })
+      await supabase.from('inventory').insert(cleanInv)
+    } else if (iErr) {
+      throw iErr
+    }
 
     // 4. Log transaction
     await supabase.from('transaction_log').insert({
@@ -334,7 +455,7 @@ export const inventoryApi = {
       .eq('status', 'in_stock')
       .order('added_at', { ascending: false })
     if (error) throw error
-    return data
+    return (data || []).map(decodeInventoryItem)
   },
 
   async getAll() {
@@ -343,17 +464,58 @@ export const inventoryApi = {
       .select('*')
       .order('added_at', { ascending: false })
     if (error) throw error
-    return data
+    return (data || []).map(decodeInventoryItem)
   },
 
   async addManual(payload) {
+    const silverType = payload.silver_type || 'K'
+    const sourceName = payload.source_name || payload.customer_name || 'Direct'
+    const tag = `[TYPE:${silverType}|SRC:${sourceName}]`
+    const description = payload.description ? `${payload.description} ${tag}` : tag
+
+    const bodyWithCols = {
+      patla_no: payload.patla_no,
+      description,
+      weight_g: parseFloat(payload.weight_g) || 0,
+      tunch_pct: parseFloat(payload.tunch_pct) || 0,
+      pure_g: parseFloat(payload.pure_g) || 0,
+      status: 'in_stock',
+      silver_type: silverType,
+      source_name: sourceName,
+    }
+
     const { data, error } = await supabase
       .from('inventory')
-      .insert({ ...payload, status: 'in_stock' })
+      .insert(bodyWithCols)
       .select()
       .single()
+
+    if (!error) return decodeInventoryItem(data)
+
+    if (error.code === 'PGRST204' || error.message?.includes('silver_type') || error.message?.includes('source_name')) {
+      const fallbackBody = {
+        patla_no: payload.patla_no,
+        description,
+        weight_g: parseFloat(payload.weight_g) || 0,
+        tunch_pct: parseFloat(payload.tunch_pct) || 0,
+        pure_g: parseFloat(payload.pure_g) || 0,
+        status: 'in_stock',
+      }
+      const { data: d2, error: e2 } = await supabase
+        .from('inventory')
+        .insert(fallbackBody)
+        .select()
+        .single()
+      if (e2) throw e2
+      return decodeInventoryItem(d2)
+    }
+
+    throw error
+  },
+
+  async delete(id) {
+    const { error } = await supabase.from('inventory').delete().eq('id', id)
     if (error) throw error
-    return data
   },
 }
 

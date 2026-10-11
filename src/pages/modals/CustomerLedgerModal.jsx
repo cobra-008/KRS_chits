@@ -61,18 +61,26 @@ export default function CustomerLedgerModal({ customer, onClose }) {
 
         for (let m = 1; m <= grp.months_happened; m++) {
           const draw = groupDraws.find(d => d.month_no === m)
-          const premiumDemanded = draw
-            ? parseFloat(draw.monthly_premium_g)
-            : parseFloat(grp.unit_limit_g)
+          const shareRatio = (parseFloat(mem.share_pct) || 100) / 100
+          
+          let baseDemanded = draw ? parseFloat(draw.monthly_premium_g) : parseFloat(grp.unit_limit_g)
+          // If the draw's stored premium was computed for a withdrawer with non-100% share, normalize base
+          if (draw?.withdrawer_share_pct && draw.withdrawer_share_pct !== 100) {
+            const withdrawerRatio = draw.withdrawer_share_pct / 100
+            const dividend = parseFloat(draw.dividend_per_member_g) || 0
+            const baseUnit = parseFloat(grp.unit_limit_g) || 1000
+            baseDemanded = Math.max(0, baseUnit - dividend)
+          }
+          const premiumDemanded = Math.round(baseDemanded * shareRatio)
 
-          const isThisCustomerWithdrawer = draw?.group_members?.customer_id === customer.id
+          const isThisCustomerWithdrawer = draw?.group_members?.customer_id === customer.id || draw?.withdrawer_member_id === mem.id
 
           events.push({
             _sort: draw ? draw.draw_date : grp.start_date || '2000-01-01',
             type: 'chit_demand',
             date: draw?.draw_date || null,
             ref: `${grp.name} · M${m}`,
-            particulars: `Chit Draw — Month ${m}${isThisCustomerWithdrawer ? ' (YOU WITHDREW)' : ''}`,
+            particulars: `Chit Draw — Month ${m}${isThisCustomerWithdrawer ? ' (WITHDRAWAL SETTLEMENT)' : ''}`,
             groupName: grp.name,
             monthNo: m,
             debitG: premiumDemanded,

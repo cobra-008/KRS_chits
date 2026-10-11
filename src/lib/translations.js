@@ -255,9 +255,13 @@ export const translations = {
     th_ledger_close_due: 'Closing Balance',
     th_ledger_close_excess: 'Closing Excess',
 
-    // Member Modals
-    modal_add_member: 'Add Member',
+    // Member Modals & Expanded Table
+    modal_add_member: 'Enroll Member in Scheme',
     modal_edit_member: 'Edit Member',
+    save_member: 'Save Member',
+    th_sno: 'S.No',
+    th_share_pct: 'Share %',
+    th_name: 'Name',
     cust_req: 'Customer *',
     ticket_req: 'Ticket No. *',
     join_month_lbl: 'Joining Month (if late joiner)',
@@ -519,6 +523,10 @@ export const translations = {
     // Member Modals
     modal_add_member: 'உறுப்பினர் சேர்க்க',
     modal_edit_member: 'உறுப்பினர் விவரம் திருத்து',
+    save_member: 'உறுப்பினரை சேமிக்க',
+    th_sno: 'வ.எண்',
+    th_share_pct: 'பங்கு %',
+    th_name: 'பெயர்',
     cust_req: 'வாடிக்கையாளர் *',
     ticket_req: 'டிக்கெட் எண் *',
     join_month_lbl: 'சேர்ந்த மாதம் (தாமதமாக சேர்ந்தால்)',

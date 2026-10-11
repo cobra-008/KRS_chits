@@ -37,15 +37,16 @@ export function krsRound(rawFine) {
 }
 
 /**
- * Calculate chit draw settlement values.
+ * Calculate chit draw settlement values matching exact KRS Chit formula.
  *
  * @param {object} params
- * @param {number} params.numMonths       - total months in scheme
- * @param {number} params.unitLimitG      - per-month unit limit in grams (1000 or 1500)
- * @param {number} params.numMembers      - enrolled member count
- * @param {number} params.discountG       - auction discount accepted by withdrawer (g)
- * @param {number} params.companyProfitPct - company profit % (default 4)
- * @param {number} params.oldDuesG        - previous balance to deduct (g)
+ * @param {number} params.numMonths          - total months in scheme (e.g. 20)
+ * @param {number} params.unitLimitG         - per-month base unit in grams (e.g. 1000)
+ * @param {number} params.numMembers         - enrolled member count
+ * @param {number} params.discountG          - auction discount accepted by withdrawer (g)
+ * @param {number} params.companyProfitPct    - company profit % (default 4)
+ * @param {number} params.oldDuesG           - previous balance to deduct (g)
+ * @param {number} params.withdrawerSharePct - participating share % (50, 100, 150, 200)
  * @returns {object} full chit calculation breakdown
  */
 export function calcChitDraw({
@@ -55,29 +56,47 @@ export function calcChitDraw({
   discountG = 0,
   companyProfitPct = 4,
   oldDuesG = 0,
+  withdrawerSharePct = 100,
 }) {
-  const totalCapacityG = numMonths * unitLimitG            // e.g. 20 × 1000 = 20000g
-  const companyProfitG = (companyProfitPct / 100) * totalCapacityG  // 4% × 20000 = 800g
-  const netDividendPoolG = Math.max(0, discountG - companyProfitG)  // discount - 800
-  const dividendPerMemberG = numMembers > 0
-    ? parseFloat((netDividendPoolG / numMembers).toFixed(3))
+  const shareRatio = (parseFloat(withdrawerSharePct) || 100) / 100
+  const baseCapacityG = (numMonths || 20) * (unitLimitG || 1000)
+  const withdrawerCapacityG = baseCapacityG * shareRatio
+
+  // 4% Company Profit on Withdrawer's Gross Capacity
+  const companyProfitG = parseFloat(((companyProfitPct / 100) * withdrawerCapacityG).toFixed(3))
+
+  // Net Dividend Pool = Discount - Company Profit
+  const netDividendPoolG = Math.max(0, parseFloat((discountG - companyProfitG).toFixed(3)))
+
+  // Dividend per member (standard portion) = Pool / Scheme Rounds
+  const divisor = numMonths || numMembers || 20
+  const dividendPerMemberG = divisor > 0
+    ? parseFloat((netDividendPoolG / divisor).toFixed(3))
     : 0
+
+  // Monthly Premium for Withdrawer = (Base Unit * shareRatio) - Dividend
+  const withdrawerBaseMonthlyUnit = (unitLimitG || 1000) * shareRatio
   const monthlyPremiumG = parseFloat(
-    (unitLimitG - dividendPerMemberG).toFixed(3)
+    Math.max(0, withdrawerBaseMonthlyUnit - dividendPerMemberG).toFixed(3)
   )
+
+  // Net Silver to Disburse to Withdrawer
   const netSilverToIssueG = parseFloat(
-    (totalCapacityG - discountG - monthlyPremiumG - oldDuesG).toFixed(3)
+    Math.max(0, withdrawerCapacityG - discountG - monthlyPremiumG - (parseFloat(oldDuesG) || 0)).toFixed(3)
   )
 
   return {
-    totalCapacityG,
+    baseCapacityG,
+    totalCapacityG: withdrawerCapacityG,
     companyProfitG,
     netDividendPoolG,
     dividendPerMemberG,
     monthlyPremiumG,
     netSilverToIssueG,
-    discountG,
-    oldDuesG,
+    discountG: parseFloat(discountG) || 0,
+    oldDuesG: parseFloat(oldDuesG) || 0,
+    shareRatio,
+    withdrawerSharePct,
   }
 }
 

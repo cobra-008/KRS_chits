@@ -8,6 +8,7 @@ import { useLanguage } from '../context/LanguageContext'
 
 const emptyLot = () => ({
   _key: Math.random().toString(36).slice(2),
+  silver_type: 'K',
   patla_no: '',
   weight_g: '',
   tunch_pct: '',
@@ -38,6 +39,10 @@ export default function VoucherPage({ type = 'receipt' }) {
     setLots(prev => prev.map(lot => {
       if (lot._key !== key) return lot
       const updated = { ...lot, [field]: value }
+      // If Bar is selected, default tunch to 100
+      if (field === 'silver_type' && value === 'B') {
+        updated.tunch_pct = '100'
+      }
       const w = parseFloat(updated.weight_g) || 0
       const t = parseFloat(updated.tunch_pct) || 0
       const { rawFine, pure } = calcFine(w, t)
@@ -182,10 +187,11 @@ export default function VoucherPage({ type = 'receipt' }) {
         {/* Lots table */}
         <div className="table-scroll-hint mb-2">{t('swipe_hint')}</div>
         <div className="table-wrap mb-4" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-          <table style={{ minWidth: 540 }}>
+          <table style={{ minWidth: 640 }}>
             <thead>
               <tr>
-                <th style={{ width: 48 }}>#</th>
+                <th style={{ width: 44 }}>#</th>
+                <th style={{ minWidth: 140 }}>Type of Silver</th>
                 <th style={{ minWidth: 120 }}>{t('th_patla_kacha_no')}</th>
                 <th style={{ minWidth: 120 }}>{t('th_weight_g')}</th>
                 <th style={{ minWidth: 100 }}>{t('th_tunch_pct')}</th>
@@ -209,7 +215,7 @@ export default function VoucherPage({ type = 'receipt' }) {
             </tbody>
             <tfoot>
               <tr>
-                <td colSpan={2}><strong>{t('total')}</strong></td>
+                <td colSpan={3}><strong>{t('total')}</strong></td>
                 <td>
                   <span className="font-mono">
                     {totalWeight.toLocaleString('en-IN', { maximumFractionDigits: 3 })} g
@@ -267,10 +273,53 @@ function LotRow({ lot, index, onChange, onRemove, onAddNext, canRemove }) {
     }
   }
 
+  const sType = lot.silver_type || 'K'
+
   return (
     <tr>
       <td>
         <span className="badge badge-gray">{index + 1}</span>
+      </td>
+      <td>
+        {/* Capsule pill with K / P / B */}
+        <div style={{
+          display: 'inline-flex',
+          background: '#090e1a',
+          border: '1px solid rgba(255,255,255,0.12)',
+          borderRadius: 20,
+          padding: 2,
+          gap: 2
+        }}>
+          {[
+            { key: 'K', label: 'K' },
+            { key: 'P', label: 'P' },
+            { key: 'B', label: 'B' },
+          ].map(pill => {
+            const isActive = sType === pill.key
+            return (
+              <button
+                key={pill.key}
+                type="button"
+                onClick={() => onChange(lot._key, 'silver_type', pill.key)}
+                title={pill.key === 'K' ? 'Katcha' : pill.key === 'P' ? 'Patla' : 'Bar (100% Tunch Default)'}
+                style={{
+                  border: 'none',
+                  borderRadius: 16,
+                  padding: '3px 10px',
+                  fontSize: '0.78rem',
+                  fontWeight: 800,
+                  fontFamily: 'monospace',
+                  cursor: 'pointer',
+                  background: isActive ? '#f59e0b' : 'transparent',
+                  color: isActive ? '#000' : '#9ca3af',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                {pill.label}
+              </button>
+            )
+          })}
+        </div>
       </td>
       <td>
         <input
@@ -374,6 +423,7 @@ function PrintableVoucher({ voucher, type }) {
           <thead>
             <tr>
               <th>#</th>
+              <th>Type</th>
               <th>{t('th_patla_kacha_no')}</th>
               <th>{t('th_weight_g')}</th>
               <th>{t('th_tunch_pct')}</th>
@@ -384,6 +434,7 @@ function PrintableVoucher({ voucher, type }) {
             {voucher.lots?.map((l, i) => (
               <tr key={i}>
                 <td>{i + 1}</td>
+                <td><span className="badge badge-gray font-mono">{l.silver_type || 'K'}</span></td>
                 <td>{l.patla_no || '—'}</td>
                 <td className="font-mono">{parseFloat(l.weight_g).toLocaleString('en-IN', { maximumFractionDigits: 3 })}</td>
                 <td className="font-mono">{parseFloat(l.tunch_pct).toFixed(3)}</td>
@@ -395,7 +446,7 @@ function PrintableVoucher({ voucher, type }) {
           </tbody>
           <tfoot>
             <tr>
-              <td colSpan={2}><strong>{t('total')}</strong></td>
+              <td colSpan={3}><strong>{t('total')}</strong></td>
               <td className="font-mono">
                 {voucher.lots?.reduce((s,l) => s+(parseFloat(l.weight_g)||0),0)
                   .toLocaleString('en-IN', { maximumFractionDigits: 3 })} g
