@@ -4,6 +4,7 @@ import { format } from 'date-fns'
 import toast from 'react-hot-toast'
 import { calcFine } from '../lib/silverCalc'
 import { customersApi, vouchersApi } from '../lib/api'
+import { useLanguage } from '../context/LanguageContext'
 
 const emptyLot = () => ({
   _key: Math.random().toString(36).slice(2),
@@ -15,6 +16,7 @@ const emptyLot = () => ({
 })
 
 export default function VoucherPage({ type = 'receipt' }) {
+  const { t, lang } = useLanguage()
   const isReceipt = type === 'receipt'
 
   const [customers, setCustomers] = useState([])
@@ -104,18 +106,18 @@ export default function VoucherPage({ type = 'receipt' }) {
       <div className="page-header">
         <div>
           <h1 className="page-title">
-            {isReceipt ? 'Receipt Voucher' : 'Issue Voucher'}
+            {isReceipt ? t('receipt_voucher_title') : t('issue_voucher_title')}
           </h1>
           <p className="page-sub">
             {isReceipt
-              ? 'Record incoming silver — auto-posts to inventory & customer account'
-              : 'Record outgoing silver — auto-deducts from inventory & customer account'
+              ? (lang === 'ta' ? 'வாடிக்கையாளர் கொண்டுவரும் வெள்ளி பார் வரவு பதிவு — தானாக கஜானாவில் சேர்க்கப்படும்' : 'Record incoming silver — auto-posts to inventory & customer account')
+              : (lang === 'ta' ? 'கஜானாவில் உள்ள கச்சாவை வாடிக்கையாளருக்கு வழங்குதல்' : 'Record outgoing silver — auto-deducts from inventory & customer account')
             }
           </p>
         </div>
         <div className="flex gap-2">
           <button id="btn-print-voucher" className="btn btn-ghost" onClick={handlePrint}>
-            <Printer /> Print
+            <Printer /> {t('print')}
           </button>
           <button
             id="btn-save-voucher"
@@ -123,7 +125,7 @@ export default function VoucherPage({ type = 'receipt' }) {
             onClick={handleSave}
             disabled={saving}
           >
-            {saving ? <><div className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} /> Saving…</> : <><Save /> Save Voucher</>}
+            {saving ? <><div className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} /> {t('saving')}</> : <><Save /> {t('save')} {isReceipt ? t('nav_receipt') : t('nav_issue')}</>}
           </button>
         </div>
       </div>
@@ -133,7 +135,7 @@ export default function VoucherPage({ type = 'receipt' }) {
         <div className="voucher-meta-grid">
           {/* Voucher # (auto) */}
           <div className="form-group">
-            <label className="form-label">Voucher No.</label>
+            <label className="form-label">{t('voucher_no')}</label>
             <div style={{
               background: 'var(--clr-surface-2)',
               border: '1.5px solid var(--clr-border)',
@@ -144,20 +146,20 @@ export default function VoucherPage({ type = 'receipt' }) {
               fontWeight: 700,
               boxShadow: 'inset 0 1px 2px rgba(18, 24, 38, 0.02)',
             }}>
-              {savedVoucher ? `#${savedVoucher.voucher_no}` : 'Auto'}
+              {savedVoucher ? `#${savedVoucher.voucher_no}` : t('auto_next')}
             </div>
           </div>
 
           {/* Customer */}
           <div className="form-group">
-            <label className="form-label" htmlFor="voucher-customer">Customer Name</label>
+            <label className="form-label" htmlFor="voucher-customer">{t('customer_name')}</label>
             <select
               id="voucher-customer"
               className="form-control"
               value={customerId}
               onChange={e => setCustomerId(e.target.value)}
             >
-              <option value="">— Select Customer —</option>
+              <option value="">{t('select_customer')}</option>
               {customers.map(c => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
@@ -166,7 +168,7 @@ export default function VoucherPage({ type = 'receipt' }) {
 
           {/* Date */}
           <div className="form-group">
-            <label className="form-label" htmlFor="voucher-date">Date</label>
+            <label className="form-label" htmlFor="voucher-date">{t('date')}</label>
             <input
               id="voucher-date"
               type="date"
@@ -178,16 +180,17 @@ export default function VoucherPage({ type = 'receipt' }) {
         </div>
 
         {/* Lots table */}
-        <div className="table-wrap mb-4">
-          <table>
+        <div className="table-scroll-hint mb-2">{t('swipe_hint')}</div>
+        <div className="table-wrap mb-4" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          <table style={{ minWidth: 540 }}>
             <thead>
               <tr>
                 <th style={{ width: 48 }}>#</th>
-                <th style={{ minWidth: 110 }}>Patla / Kacha No.</th>
-                <th style={{ minWidth: 120 }}>Weight (g)</th>
-                <th style={{ minWidth: 100 }}>Tunch (%)</th>
-                <th style={{ minWidth: 110 }}>Raw Fine (g)</th>
-                <th style={{ minWidth: 100, color: 'var(--clr-gold)' }}>Pure (g)</th>
+                <th style={{ minWidth: 120 }}>{t('th_patla_kacha_no')}</th>
+                <th style={{ minWidth: 120 }}>{t('th_weight_g')}</th>
+                <th style={{ minWidth: 100 }}>{t('th_tunch_pct')}</th>
+                <th style={{ minWidth: 110 }}>{t('th_raw_fine_g')}</th>
+                <th style={{ minWidth: 100, color: 'var(--clr-gold)' }}>{t('th_pure_g')}</th>
                 <th style={{ width: 40 }}></th>
               </tr>
             </thead>
@@ -206,7 +209,7 @@ export default function VoucherPage({ type = 'receipt' }) {
             </tbody>
             <tfoot>
               <tr>
-                <td colSpan={2} />
+                <td colSpan={2}><strong>{t('total')}</strong></td>
                 <td>
                   <span className="font-mono">
                     {totalWeight.toLocaleString('en-IN', { maximumFractionDigits: 3 })} g
@@ -231,11 +234,11 @@ export default function VoucherPage({ type = 'receipt' }) {
             className="btn btn-ghost"
             onClick={addLot}
           >
-            <Plus /> Add Lot
+            <Plus /> {t('btn_add_lot')}
           </button>
 
           <div style={{ fontSize: '0.8rem', color: 'var(--clr-text-muted)' }}>
-            Rounding: ≤0.69 → 0 · ≥0.70 → +1
+            {t('krs_rounding_note')}
           </div>
         </div>
       </div>
@@ -333,6 +336,7 @@ function LotRow({ lot, index, onChange, onRemove, onAddNext, canRemove }) {
 
 /* ── Printable Voucher ── */
 function PrintableVoucher({ voucher, type }) {
+  const { t, lang } = useLanguage()
   const isReceipt = type === 'receipt'
   const prefix = isReceipt ? 'RV' : 'IV'
 
@@ -346,10 +350,10 @@ function PrintableVoucher({ voucher, type }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
         <div>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.3rem', fontWeight: 700, color: 'var(--clr-gold)' }}>
-            K R S SILVERS
+            {t('brand_title')}
           </div>
           <div style={{ fontSize: '0.75rem', color: 'var(--clr-text-muted)', marginTop: 2 }}>
-            {isReceipt ? 'RECEIPT VOUCHER' : 'ISSUE VOUCHER'}
+            {isReceipt ? (lang === 'ta' ? 'உள்வரும் வரவு வவுச்சர்' : 'RECEIPT VOUCHER') : (lang === 'ta' ? 'வெளிச்செல்லும் வழங்கல் வவுச்சர்' : 'ISSUE VOUCHER')}
           </div>
         </div>
         <div style={{ textAlign: 'right' }}>
@@ -361,19 +365,19 @@ function PrintableVoucher({ voucher, type }) {
       </div>
 
       <div style={{ marginBottom: 12, fontSize: '0.83rem' }}>
-        <span className="text-muted">Customer: </span>
+        <span className="text-muted">{t('th_customer')}: </span>
         <strong>{voucher.customer?.name || '—'}</strong>
       </div>
 
-      <div className="table-wrap">
-        <table>
+      <div className="table-wrap" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+        <table style={{ minWidth: 480 }}>
           <thead>
             <tr>
               <th>#</th>
-              <th>Patla / Kacha No.</th>
-              <th>Weight (g)</th>
-              <th>Tunch (%)</th>
-              <th>Pure Fine (g)</th>
+              <th>{t('th_patla_kacha_no')}</th>
+              <th>{t('th_weight_g')}</th>
+              <th>{t('th_tunch_pct')}</th>
+              <th>{t('th_pure_g')}</th>
             </tr>
           </thead>
           <tbody>
@@ -391,7 +395,7 @@ function PrintableVoucher({ voucher, type }) {
           </tbody>
           <tfoot>
             <tr>
-              <td colSpan={2}><strong>TOTAL</strong></td>
+              <td colSpan={2}><strong>{t('total')}</strong></td>
               <td className="font-mono">
                 {voucher.lots?.reduce((s,l) => s+(parseFloat(l.weight_g)||0),0)
                   .toLocaleString('en-IN', { maximumFractionDigits: 3 })} g
@@ -411,12 +415,12 @@ function PrintableVoucher({ voucher, type }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 40, paddingTop: 12, borderTop: '1px solid var(--clr-border)' }}>
         <div style={{ textAlign: 'center', width: 160 }}>
           <div style={{ borderTop: '1px solid var(--clr-text-muted)', paddingTop: 8, marginTop: 32, fontSize: '0.78rem', color: 'var(--clr-text-muted)' }}>
-            Customer Signature
+            {t('customer_signature')}
           </div>
         </div>
         <div style={{ textAlign: 'center', width: 160 }}>
           <div style={{ borderTop: '1px solid var(--clr-text-muted)', paddingTop: 8, marginTop: 32, fontSize: '0.78rem', color: 'var(--clr-text-muted)' }}>
-            Authorized Signatory
+            {t('authorized_signature')}
           </div>
         </div>
       </div>

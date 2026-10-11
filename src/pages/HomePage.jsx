@@ -8,8 +8,10 @@ import AddMemberModal from './modals/AddMemberModal'
 import EditMemberModal from './modals/EditMemberModal'
 import GenerateChitModal from './modals/GenerateChitModal'
 import CustomerLedgerModal from './modals/CustomerLedgerModal'
+import { useLanguage } from '../context/LanguageContext'
 
 export default function HomePage({ onNavigate }) {
+  const { t } = useLanguage()
   const [groups, setGroups] = useState([])
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState({})
@@ -115,47 +117,47 @@ export default function HomePage({ onNavigate }) {
           className="btn btn-gold btn-sm"
           onClick={() => onNavigate('receipt')}
         >
-          <FileText /> Receipt Voucher
+          <FileText /> {t('quick_receipt', 'Receipt Voucher')}
         </button>
         <button
           id="btn-quick-issue"
           className="btn btn-ghost btn-sm"
           onClick={() => onNavigate('issue')}
         >
-          <Send /> Issue Voucher
+          <Send /> {t('quick_issue', 'Issue Voucher')}
         </button>
         <button
           id="btn-quick-customers"
           className="btn btn-ghost btn-sm"
           onClick={() => onNavigate('customers')}
         >
-          <Users /> Customers
+          <Users /> {t('quick_customers', 'Customers')}
         </button>
       </div>
 
       {/* Groups */}
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="page-title">Active Groups</h2>
-          <p className="page-sub">Silver chit schemes — click to view members</p>
+          <h2 className="page-title">{t('active_groups', 'Active Groups')}</h2>
+          <p className="page-sub">{t('active_groups_sub', 'Silver chit schemes — click to view members')}</p>
         </div>
         <button
           id="btn-create-group"
           className="btn btn-ghost btn-sm"
           onClick={() => onNavigate('groups')}
         >
-          <Plus /> New Group
+          <Plus /> {t('new_group', 'New Group')}
         </button>
       </div>
 
       {loading ? (
-        <div className="loading-overlay"><div className="spinner" /> Loading groups…</div>
+        <div className="loading-overlay"><div className="spinner" /> {t('loading', 'Loading groups…')}</div>
       ) : groups.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-state-title">No groups yet</div>
-          <div className="empty-state-sub">Create your first silver chit scheme</div>
+          <div className="empty-state-title">{t('no_groups', 'No groups yet')}</div>
+          <div className="empty-state-sub">{t('create_first_group', 'Create your first silver chit scheme')}</div>
           <button className="btn btn-gold mt-4" onClick={() => onNavigate('groups')}>
-            <Plus /> Create Group
+            <Plus /> {t('create_group_btn', 'Create Group')}
           </button>
         </div>
       ) : (
@@ -178,22 +180,22 @@ export default function HomePage({ onNavigate }) {
                         {group.name}
                       </span>
                       <span className="badge badge-gold">
-                        {group.months_happened}/{group.num_months} Months
+                        {group.months_happened}/{group.num_months} {t('month_word', 'Months')}
                       </span>
                     </div>
                     <div className="flex gap-3 mt-1 text-xs text-muted">
-                      <span>{group.num_months} month scheme</span>
+                      <span>{group.num_months} {t('month_scheme', 'month scheme')}</span>
                       <span>·</span>
-                      <span>{gramsToKg(group.unit_limit_g)} kg/month</span>
+                      <span>{gramsToKg(group.unit_limit_g)} {t('kg_per_month', 'kg/month')}</span>
                       <span>·</span>
-                      <span>Capacity: {gramsToKg(group.num_months * group.unit_limit_g)} kg/member</span>
+                      <span>{t('capacity_prefix', 'Capacity:')} {gramsToKg(group.num_months * group.unit_limit_g)} {t('kg_per_member', 'kg/member')}</span>
                     </div>
                   </div>
 
                   <div className="group-card-actions" onClick={e => e.stopPropagation()}>
                     {/* Members count */}
                     <span className="badge badge-gray">
-                      {groupMembers.length > 0 ? `${groupMembers.length}` : '0'} members
+                      {groupMembers.length > 0 ? `${groupMembers.length}` : '0'} {t('members_count', 'members')}
                     </span>
 
                     {/* +Month button */}
@@ -203,7 +205,7 @@ export default function HomePage({ onNavigate }) {
                       title="Record next month"
                       onClick={() => handleIncrementMonth(group)}
                     >
-                      <Plus /> Month
+                      <Plus /> {t('btn_plus_month', 'Month')}
                     </button>
 
                     {/* Generate Chit */}
@@ -212,7 +214,7 @@ export default function HomePage({ onNavigate }) {
                       className="btn btn-gold btn-sm"
                       onClick={() => setChitModal(group)}
                     >
-                      Generate Chit
+                      {t('btn_gen_chit', 'Generate Chit')}
                     </button>
 
                     <ChevronDown
@@ -241,19 +243,19 @@ export default function HomePage({ onNavigate }) {
                         flexWrap: 'wrap',
                       }}>
                         <span>
-                          Last Draw: Month {latestDraw.month_no} — {format(parseISO(latestDraw.draw_date), 'dd MMM yyyy')}
+                          {t('last_draw', 'Last Draw:')} {t('month_word', 'Month')} {latestDraw.month_no} — {format(parseISO(latestDraw.draw_date), 'dd MMM yyyy')}
                         </span>
                         <span>·</span>
                         <span>
-                          Withdrawer: {latestDraw.group_members?.customers?.name || '—'}
+                          {t('withdrawer_prefix', 'Withdrawer:')} {latestDraw.group_members?.customers?.name || '—'}
                         </span>
                         <span>·</span>
                         <span>
-                          Premium: {formatGrams(latestDraw.monthly_premium_g)}
+                          {t('premium_prefix', 'Premium:')} {formatGrams(latestDraw.monthly_premium_g)}
                         </span>
                         <span>·</span>
                         <span>
-                          Net Issued: {formatGrams(latestDraw.net_silver_to_issue_g)}
+                          {t('net_issued_prefix', 'Net Issued:')} {formatGrams(latestDraw.net_silver_to_issue_g)}
                         </span>
                       </div>
                     )}
@@ -261,103 +263,104 @@ export default function HomePage({ onNavigate }) {
                     {/* Member table header */}
                     <div className="flex items-center justify-between" style={{ padding: '10px 20px' }}>
                       <span className="text-xs text-muted font-semibold" style={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                        Members ({groupMembers.length})
+                        {t('members_heading', 'Members')} ({groupMembers.length})
                       </span>
                       <button
                         id={`btn-add-member-${group.id}`}
                         className="btn btn-ghost btn-sm"
                         onClick={() => setAddMemberModal(group)}
                       >
-                        <Plus /> Add Member
+                        <Plus /> {t('btn_add_member', 'Add Member')}
                       </button>
                     </div>
 
                     {loadingMembers[group.id] ? (
                       <div className="loading-overlay" style={{ padding: '20px' }}>
-                        <div className="spinner" /> Loading members…
+                        <div className="spinner" /> {t('loading_members', 'Loading members…')}
                       </div>
                     ) : groupMembers.length === 0 ? (
                       <div className="empty-state" style={{ padding: '24px' }}>
-                        <div className="empty-state-title">No members enrolled</div>
+                        <div className="empty-state-title">{t('no_members_enrolled', 'No members enrolled')}</div>
                       </div>
                     ) : (
-                      <div className="table-wrap" style={{ borderRadius: 0, border: 'none' }}>
-                        <table>
-                          <thead>
-                            <tr>
-                              <th>Ticket</th>
-                              <th>Member</th>
-                              <th>Phone</th>
-                              <th>Months Paid</th>
-                              <th>Fine Deposited</th>
-                              <th>Fine Demanded</th>
-                              <th>Status</th>
-                              <th>Actions</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {groupMembers.map(member => {
-                              const { demanded, deposited, diff } = getMemberStatus(member, group, groupDraws)
-                              const isOverdue = diff < 0
-                              const isExcess  = diff > 0
-                              const isSettled = diff === 0
+                      <>
+                        <div className="table-wrap" style={{ borderRadius: 0, border: 'none', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                          <table style={{ minWidth: 620 }}>
+                            <thead>
+                              <tr>
+                                <th style={{ width: 70 }}>{t('th_ticket', 'Ticket')}</th>
+                                <th style={{ minWidth: 140 }}>{t('th_member', 'Member')}</th>
+                                <th style={{ minWidth: 100 }}>{t('th_phone', 'Phone')}</th>
+                                <th style={{ minWidth: 110 }}>{t('th_months_paid', 'Months Paid')}</th>
+                                <th style={{ minWidth: 110 }}>{t('th_fine_deposited', 'Fine Deposited')}</th>
+                                <th style={{ minWidth: 110 }}>{t('th_fine_demanded', 'Fine Demanded')}</th>
+                                <th style={{ minWidth: 95 }}>{t('th_status', 'Status')}</th>
+                                <th style={{ minWidth: 80 }}>{t('th_actions', 'Actions')}</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {groupMembers.map(member => {
+                                const { demanded, deposited, diff } = getMemberStatus(member, group, groupDraws)
+                                const isOverdue = diff < 0
+                                const isExcess  = diff > 0
+                                const isSettled = diff === 0
 
-                              return (
-                                <tr
-                                  key={member.id}
-                                  style={{ cursor: 'pointer' }}
-                                  onDoubleClick={() => setLedgerCustomer(member.customers)}
-                                  title="Double-click to view full ledger"
-                                >
-                                  <td>
-                                    <span className="badge badge-gold">#{member.ticket_no}</span>
-                                  </td>
-                                  <td>
-                                    <div className="flex items-center gap-2">
-                                      <div className="avatar" style={{ width: 28, height: 28, fontSize: '0.7rem' }}>
-                                        {member.customers?.photo_url
-                                          ? <img src={member.customers.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
-                                          : member.customers?.name?.[0]?.toUpperCase()
-                                        }
+                                return (
+                                  <tr
+                                    key={member.id}
+                                    style={{ cursor: 'pointer' }}
+                                    onDoubleClick={() => setLedgerCustomer(member.customers)}
+                                    title="Double-click to view full ledger"
+                                  >
+                                    <td>
+                                      <span className="badge badge-gold">#{member.ticket_no}</span>
+                                    </td>
+                                    <td>
+                                      <div className="flex items-center gap-2">
+                                        <div className="avatar" style={{ width: 28, height: 28, fontSize: '0.7rem' }}>
+                                          {member.customers?.photo_url
+                                            ? <img src={member.customers.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                                            : member.customers?.name?.[0]?.toUpperCase()
+                                          }
+                                        </div>
+                                        <span className="font-semibold">{member.customers?.name}</span>
+                                        {member.is_withdrawn && (
+                                          <span className="badge badge-maroon" style={{ fontSize: '0.65rem' }}>{t('badge_withdrawn', 'Withdrawn')}</span>
+                                        )}
                                       </div>
-                                      <span className="font-semibold">{member.customers?.name}</span>
-                                      {member.is_withdrawn && (
-                                        <span className="badge badge-maroon" style={{ fontSize: '0.65rem' }}>Withdrawn</span>
+                                    </td>
+                                    <td className="text-secondary">{member.customers?.phone || '—'}</td>
+                                    <td>
+                                      <span className={isOverdue ? 'text-danger font-semibold' : 'text-secondary'}>
+                                        {group.months_happened} {t('happened_suffix', 'happened')}
+                                      </span>
+                                    </td>
+                                    <td className="font-mono">
+                                      {formatGrams(deposited)}
+                                    </td>
+                                    <td className="font-mono">
+                                      {formatGrams(demanded)}
+                                    </td>
+                                    <td>
+                                      {isOverdue ? (
+                                        <span className="badge badge-red">
+                                          {formatGrams(Math.abs(diff))} {t('badge_due', 'Due')}
+                                        </span>
+                                      ) : isExcess ? (
+                                        <span className="badge badge-green">
+                                          +{formatGrams(diff)} {t('badge_excess', 'Excess')}
+                                        </span>
+                                      ) : (
+                                        <span className="badge badge-gray">{t('badge_settled', 'Settled')}</span>
                                       )}
-                                    </div>
-                                  </td>
-                                  <td className="text-secondary">{member.customers?.phone || '—'}</td>
-                                  <td>
-                                    <span className={isOverdue ? 'text-danger font-semibold' : 'text-secondary'}>
-                                      {group.months_happened} happened
-                                    </span>
-                                  </td>
-                                  <td className="font-mono">
-                                    {formatGrams(deposited)}
-                                  </td>
-                                  <td className="font-mono">
-                                    {formatGrams(demanded)}
-                                  </td>
-                                  <td>
-                                    {isOverdue ? (
-                                      <span className="badge badge-red">
-                                        {formatGrams(Math.abs(diff))} Due
-                                      </span>
-                                    ) : isExcess ? (
-                                      <span className="badge badge-green">
-                                        +{formatGrams(diff)} Excess
-                                      </span>
-                                    ) : (
-                                      <span className="badge badge-gray">Settled</span>
-                                    )}
-                                  </td>
-                                  <td>
-                                    <div className="flex gap-1">
-                                      <button
-                                        className="btn btn-ghost btn-sm btn-icon"
-                                        title="Edit member"
-                                        onClick={(e) => { e.stopPropagation(); setEditMemberModal(member) }}
-                                      >
+                                    </td>
+                                    <td>
+                                      <div className="flex gap-1">
+                                        <button
+                                          className="btn btn-ghost btn-sm btn-icon"
+                                          title="Edit member"
+                                          onClick={(e) => { e.stopPropagation(); setEditMemberModal(member) }}
+                                        >
                                         <Edit2 size={12} />
                                       </button>
                                       <button

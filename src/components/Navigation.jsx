@@ -2,22 +2,25 @@ import {
   Home, FileText, Send, Users, Layers, Package,
   AlertCircle, ClockIcon, PlusCircle, Grid
 } from 'lucide-react'
+import { useLanguage } from '../context/LanguageContext'
 
 const NAV_ITEMS = [
-  { id: 'home',         label: 'Home',           icon: Home },
-  { id: 'receipt',      label: 'Receipt Voucher', icon: FileText },
-  { id: 'issue',        label: 'Issue Voucher',   icon: Send },
-  { id: 'customers',   label: 'Customers',        icon: Users },
-  { id: 'groups',      label: 'Groups',           icon: Grid },
-  { id: 'inventory',   label: 'Inventory',        icon: Package },
-  { id: 'outstanding', label: 'Outstanding',      icon: AlertCircle },
-  { id: 'transactions',label: 'Transactions',     icon: ClockIcon },
+  { id: 'home',         labelKey: 'nav_home',         fallback: 'Home',           icon: Home },
+  { id: 'receipt',      labelKey: 'nav_receipt',      fallback: 'Receipt Voucher', icon: FileText },
+  { id: 'issue',        labelKey: 'nav_issue',        fallback: 'Issue Voucher',   icon: Send },
+  { id: 'customers',   labelKey: 'nav_customers',   fallback: 'Customers',        icon: Users },
+  { id: 'groups',      labelKey: 'nav_groups',      fallback: 'Groups',           icon: Grid },
+  { id: 'inventory',   labelKey: 'nav_inventory',   fallback: 'Inventory',        icon: Package },
+  { id: 'outstanding', labelKey: 'nav_outstanding', fallback: 'Outstanding',      icon: AlertCircle },
+  { id: 'transactions',labelKey: 'nav_transactions',fallback: 'Transactions',     icon: ClockIcon },
 ]
 
 export default function Navigation({ active, onChange }) {
+  const { t } = useLanguage()
+
   return (
     <nav className="nav" role="navigation" aria-label="Main navigation">
-      {NAV_ITEMS.map(({ id, label, icon: Icon }) => (
+      {NAV_ITEMS.map(({ id, labelKey, fallback, icon: Icon }) => (
         <button
           key={id}
           id={`nav-${id}`}
@@ -26,7 +29,7 @@ export default function Navigation({ active, onChange }) {
           aria-current={active === id ? 'page' : undefined}
         >
           <Icon />
-          {label}
+          {t(labelKey, fallback)}
         </button>
       ))}
     </nav>

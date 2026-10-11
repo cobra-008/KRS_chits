@@ -2,8 +2,10 @@ import { useState, useRef } from 'react'
 import { customersApi } from '../../lib/api'
 import { Camera, X, Save } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useLanguage } from '../../context/LanguageContext'
 
 export default function CustomerFormModal({ customer, onClose, onSaved }) {
+  const { t, lang } = useLanguage()
   const isEdit = !!customer
   const [saving, setSaving] = useState(false)
   const [photoPreview, setPhotoPreview] = useState(customer?.photo_url || null)
@@ -64,7 +66,7 @@ export default function CustomerFormModal({ customer, onClose, onSaved }) {
     <div className="modal-backdrop" role="dialog" aria-modal="true">
       <div className="modal modal-md">
         <div className="modal-header">
-          <span className="modal-title">{isEdit ? 'Edit Customer' : 'New Customer Account'}</span>
+          <span className="modal-title">{isEdit ? t('modal_edit_cust') : t('modal_new_cust')}</span>
           <button className="btn btn-ghost btn-sm btn-icon" onClick={onClose}><X size={16} /></button>
         </div>
         <div className="modal-body">
@@ -84,7 +86,7 @@ export default function CustomerFormModal({ customer, onClose, onSaved }) {
             </div>
             <div>
               <button className="btn btn-ghost btn-sm" onClick={() => fileRef.current?.click()}>
-                <Camera size={13} /> Upload Photo
+                <Camera size={13} /> {t('upload_photo')}
               </button>
               <div className="text-xs text-muted mt-1">JPG, PNG up to 5MB</div>
               <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhoto} />
@@ -93,46 +95,46 @@ export default function CustomerFormModal({ customer, onClose, onSaved }) {
 
           <div className="form-grid form-grid-2">
             <div className="form-group" style={{ gridColumn: '1/-1' }}>
-              <label className="form-label" htmlFor="cust-name">Full Name *</label>
-              <input id="cust-name" className="form-control" value={form.name} onChange={e => set('name', e.target.value)} placeholder="Customer full name" />
+              <label className="form-label" htmlFor="cust-name">{t('full_name_req')}</label>
+              <input id="cust-name" className="form-control" value={form.name} onChange={e => set('name', e.target.value)} placeholder={t('customer_name')} />
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="cust-phone">Phone</label>
+              <label className="form-label" htmlFor="cust-phone">{t('phone_label')}</label>
               <input id="cust-phone" className="form-control" value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="Primary phone" />
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="cust-wa">WhatsApp</label>
+              <label className="form-label" htmlFor="cust-wa">{t('whatsapp_label')}</label>
               <input id="cust-wa" className="form-control" value={form.whatsapp} onChange={e => set('whatsapp', e.target.value)} placeholder="WhatsApp number" />
             </div>
 
             <div className="form-group" style={{ gridColumn: '1/-1' }}>
-              <label className="form-label" htmlFor="cust-address">Address</label>
+              <label className="form-label" htmlFor="cust-address">{t('address_label')}</label>
               <textarea id="cust-address" className="form-control" rows={2} value={form.address} onChange={e => set('address', e.target.value)} placeholder="Street address" />
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="cust-city">City</label>
+              <label className="form-label" htmlFor="cust-city">{t('city_label')}</label>
               <input id="cust-city" className="form-control" value={form.city} onChange={e => set('city', e.target.value)} placeholder="City" />
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="cust-pin">Pincode</label>
+              <label className="form-label" htmlFor="cust-pin">{t('pincode_label')}</label>
               <input id="cust-pin" className="form-control" value={form.pincode} onChange={e => set('pincode', e.target.value)} placeholder="PIN code" />
             </div>
 
             <div className="form-group" style={{ gridColumn: '1/-1' }}>
-              <label className="form-label" htmlFor="cust-id">ID Proof</label>
-              <input id="cust-id" className="form-control" value={form.id_proof} onChange={e => set('id_proof', e.target.value)} placeholder="Aadhaar / PAN / Driving License" />
+              <label className="form-label" htmlFor="cust-id">{t('id_proof_label')}</label>
+              <input id="cust-id" className="form-control" value={form.id_proof} onChange={e => set('id_proof', e.target.value)} placeholder="Aadhaar / PAN" />
             </div>
           </div>
         </div>
 
         <div className="modal-footer">
-          <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+          <button className="btn btn-ghost" onClick={onClose}>{t('cancel')}</button>
           <button id="btn-save-customer" className="btn btn-gold" onClick={handleSave} disabled={saving}>
-            {saving ? <><div className="spinner" style={{ width: 13, height: 13, borderWidth: 2 }} /> Saving…</> : <><Save size={13} /> Save</>}
+            {saving ? <><div className="spinner" style={{ width: 13, height: 13, borderWidth: 2 }} /> {t('saving')}</> : <><Save size={13} /> {t('save')}</>}
           </button>
         </div>
       </div>

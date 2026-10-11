@@ -4,8 +4,10 @@ import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { gramsToKg, getTotalFineDemanded } from '../lib/silverCalc'
 import CustomerLedgerModal from './modals/CustomerLedgerModal'
+import { useLanguage } from '../context/LanguageContext'
 
 export default function OutstandingPage() {
+  const { t, lang } = useLanguage()
   const [data, setData] = useState([])   // enriched member records
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -67,24 +69,24 @@ export default function OutstandingPage() {
     <div className="page">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Outstanding Balances</h1>
-          <p className="page-sub">Member-wise dues and excess across all groups</p>
+          <h1 className="page-title">{t('outstanding_title')}</h1>
+          <p className="page-sub">{t('outstanding_sub')}</p>
         </div>
       </div>
 
       {/* Summary */}
       <div className="stat-grid stat-grid-3 mb-5">
         <div className="stat-card">
-          <div className="stat-label">Total Members</div>
+          <div className="stat-label">{t('total_members_stat')}</div>
           <div className="stat-value">{filtered.length}</div>
         </div>
         <div className="stat-card">
-          <div className="stat-label">Total Outstanding Due</div>
+          <div className="stat-label">{t('total_out_due_stat')}</div>
           <div className="stat-value red">{totalDue.toLocaleString('en-IN')} g</div>
           <div className="stat-sub">{gramsToKg(totalDue)} kg</div>
         </div>
         <div className="stat-card">
-          <div className="stat-label">Total Excess (Advance)</div>
+          <div className="stat-label">{t('total_excess_stat')}</div>
           <div className="stat-value green">{totalExcess.toLocaleString('en-IN')} g</div>
           <div className="stat-sub">{gramsToKg(totalExcess)} kg</div>
         </div>
@@ -96,34 +98,36 @@ export default function OutstandingPage() {
           id="outstanding-search"
           className="form-control"
           style={{ paddingLeft: 36 }}
-          placeholder="Search by customer, phone or group…"
+          placeholder={t('search_outstanding_ph')}
           value={search}
           onChange={e => setSearch(e.target.value)}
         />
       </div>
 
       {loading ? (
-        <div className="loading-overlay"><div className="spinner" /> Loading…</div>
+        <div className="loading-overlay"><div className="spinner" /> {t('loading')}</div>
       ) : filtered.length === 0 ? (
         <div className="empty-state">
           <AlertCircle size={48} style={{ opacity: 0.3 }} />
-          <div className="empty-state-title">No records found</div>
+          <div className="empty-state-title">{t('no_customers_found')}</div>
         </div>
       ) : (
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Customer</th>
-                <th>Group</th>
-                <th>Ticket</th>
-                <th>Total Liability</th>
-                <th>Fine Demanded</th>
-                <th>Fine Deposited</th>
-                <th>Balance / Excess</th>
-                <th>Action</th>
-              </tr>
-            </thead>
+        <>
+          <div className="table-scroll-hint mb-2">{t('swipe_hint')}</div>
+          <div className="table-wrap" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+            <table style={{ minWidth: 680 }}>
+              <thead>
+                <tr>
+                  <th>{t('th_customer')}</th>
+                  <th>{t('th_group')}</th>
+                  <th>{t('th_ticket')}</th>
+                  <th>{t('th_total_scheme')}</th>
+                  <th>{t('th_fine_demanded')}</th>
+                  <th>{t('th_fine_deposited')}</th>
+                  <th>{t('th_net_position')}</th>
+                  <th>{t('th_actions')}</th>
+                </tr>
+              </thead>
             <tbody>
               {filtered.map(m => {
                 const isOverdue = m.diff < 0
@@ -156,14 +160,14 @@ export default function OutstandingPage() {
                     <td>
                       {isOverdue ? (
                         <span className="ledger-balance">
-                          {Math.abs(m.diff).toLocaleString('en-IN')} g Due
+                          {Math.abs(m.diff).toLocaleString('en-IN')} g {t('badge_due')}
                         </span>
                       ) : isExcess ? (
                         <span className="ledger-excess">
-                          +{m.diff.toLocaleString('en-IN')} g Excess
+                          +{m.diff.toLocaleString('en-IN')} g {t('badge_excess')}
                         </span>
                       ) : (
-                        <span className="ledger-settled">Settled</span>
+                        <span className="ledger-settled">{t('badge_settled')}</span>
                       )}
                     </td>
                     <td>
@@ -171,7 +175,7 @@ export default function OutstandingPage() {
                         className="btn btn-ghost btn-sm"
                         onClick={() => setLedgerCustomer(m.customers)}
                       >
-                        View Ledger
+                        {t('btn_view_ledger')}
                       </button>
                     </td>
                   </tr>
@@ -180,6 +184,7 @@ export default function OutstandingPage() {
             </tbody>
           </table>
         </div>
+      </>
       )}
 
       {ledgerCustomer && (

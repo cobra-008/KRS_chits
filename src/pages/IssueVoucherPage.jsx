@@ -4,6 +4,7 @@ import { format } from 'date-fns'
 import toast from 'react-hot-toast'
 import { calcFine, gramsToKg, formatGrams } from '../lib/silverCalc'
 import { customersApi, vouchersApi, inventoryApi } from '../lib/api'
+import { useLanguage } from '../context/LanguageContext'
 
 const emptyCustomLot = () => ({
   _key: Math.random().toString(36).slice(2),
@@ -16,6 +17,7 @@ const emptyCustomLot = () => ({
 })
 
 export default function IssueVoucherPage({ initialSelectedIds = [] }) {
+  const { t } = useLanguage()
   const [customers, setCustomers] = useState([])
   const [customerId, setCustomerId] = useState('')
   const [voucherDate, setVoucherDate] = useState(format(new Date(), 'yyyy-MM-dd'))
@@ -221,15 +223,15 @@ export default function IssueVoucherPage({ initialSelectedIds = [] }) {
       {/* Page Header */}
       <div className="page-header">
         <div>
-          <h1 className="page-title">Issue Voucher</h1>
+          <h1 className="page-title">{t('issue_voucher_title', 'Issue Voucher')}</h1>
           <p className="page-sub">
-            Issue existing vault silver inventory to customers / chit members — deducts from vault stock
+            {t('issue_voucher_sub', 'Issue existing vault silver inventory to customers / chit members — deducts from vault stock')}
           </p>
         </div>
         <div className="flex gap-2">
           {savedVoucher && (
             <button id="btn-print-issue" className="btn btn-ghost" onClick={handlePrint}>
-              <Printer /> Print Voucher
+              <Printer /> {t('btn_print_voucher', 'Print Voucher')}
             </button>
           )}
           <button
@@ -239,9 +241,9 @@ export default function IssueVoucherPage({ initialSelectedIds = [] }) {
             disabled={saving || totalCount === 0}
           >
             {saving ? (
-              <><div className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} /> Saving…</>
+              <><div className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} /> {t('saving', 'Saving…')}</>
             ) : (
-              <><Save /> Save Issue Voucher</>
+              <><Save /> {t('btn_confirm_issue', 'Save Issue Voucher')}</>
             )}
           </button>
         </div>
@@ -250,14 +252,14 @@ export default function IssueVoucherPage({ initialSelectedIds = [] }) {
       {/* Recipient & Voucher Info Card */}
       <div className="card mb-6">
         <div className="card-header">
-          <span className="card-title">Recipient &amp; Voucher Information</span>
-          <span className="badge badge-maroon">Outgoing Silver Delivery</span>
+          <span className="card-title">{t('recipient_info', 'Recipient & Voucher Information')}</span>
+          <span className="badge badge-maroon">{t('outgoing_badge', 'Outgoing Silver Delivery')}</span>
         </div>
 
         <div className="form-grid form-grid-3">
           {/* Voucher # */}
           <div className="form-group">
-            <label className="form-label">Voucher No.</label>
+            <label className="form-label">{t('voucher_no', 'Voucher No.')}</label>
             <div style={{
               background: 'var(--clr-surface-2)',
               border: '1.5px solid var(--clr-border)',
@@ -267,20 +269,20 @@ export default function IssueVoucherPage({ initialSelectedIds = [] }) {
               fontSize: '0.92rem',
               fontWeight: 700,
             }}>
-              {savedVoucher ? `#IV-${String(savedVoucher.voucher_no).padStart(4, '0')}` : 'Auto (Next IV)'}
+              {savedVoucher ? `#IV-${String(savedVoucher.voucher_no).padStart(4, '0')}` : t('auto_next_iv', 'Auto (Next IV)')}
             </div>
           </div>
 
           {/* Customer / Member */}
           <div className="form-group" style={{ gridColumn: 'span 1' }}>
-            <label className="form-label" htmlFor="issue-customer">Customer / Member Name *</label>
+            <label className="form-label" htmlFor="issue-customer">{t('cust_member_req', 'Customer / Member Name *')}</label>
             <select
               id="issue-customer"
               className="form-control"
               value={customerId}
               onChange={e => setCustomerId(e.target.value)}
             >
-              <option value="">— Select Customer / Member —</option>
+              <option value="">{t('select_customer', '— Select Customer / Member —')}</option>
               {customers.map(c => (
                 <option key={c.id} value={c.id}>
                   {c.name} {c.phone ? `(${c.phone})` : ''}
@@ -291,7 +293,7 @@ export default function IssueVoucherPage({ initialSelectedIds = [] }) {
 
           {/* Date */}
           <div className="form-group">
-            <label className="form-label" htmlFor="issue-date">Issue Date</label>
+            <label className="form-label" htmlFor="issue-date">{t('issue_date', 'Issue Date')}</label>
             <input
               id="issue-date"
               type="date"
@@ -314,9 +316,9 @@ export default function IssueVoucherPage({ initialSelectedIds = [] }) {
             gap: 20,
             flexWrap: 'wrap',
           }}>
-            <span><strong>Name:</strong> {selectedCustomer.name}</span>
-            {selectedCustomer.phone && <span><strong>Phone:</strong> {selectedCustomer.phone}</span>}
-            {selectedCustomer.city && <span><strong>City:</strong> {selectedCustomer.city}</span>}
+            <span><strong>{t('th_customer', 'Name')}:</strong> {selectedCustomer.name}</span>
+            {selectedCustomer.phone && <span><strong>{t('th_phone', 'Phone')}:</strong> {selectedCustomer.phone}</span>}
+            {selectedCustomer.city && <span><strong>{t('th_city', 'City')}:</strong> {selectedCustomer.city}</span>}
           </div>
         )}
       </div>
@@ -328,13 +330,13 @@ export default function IssueVoucherPage({ initialSelectedIds = [] }) {
         <div className="card">
           <div className="card-header">
             <div>
-              <span className="card-title">1. Available Vault Inventory</span>
+              <span className="card-title">{t('vault_inv_title', '1. Available Vault Inventory')}</span>
               <p className="text-xs text-muted mt-1">
-                Select physical kachas from vault to add to this issue voucher
+                {t('vault_inv_sub', 'Select physical kachas from vault to add to this issue voucher')}
               </p>
             </div>
             <span className="badge badge-gray">
-              {vaultItems.length} in vault
+              {vaultItems.length} {t('in_vault', 'in vault')}
             </span>
           </div>
 
@@ -345,92 +347,97 @@ export default function IssueVoucherPage({ initialSelectedIds = [] }) {
               <input
                 className="form-control"
                 style={{ paddingLeft: 34, paddingRight: 10, fontSize: '0.84rem', height: 38 }}
-                placeholder="Search Patla No, weight, purity…"
+                placeholder={t('search_vault_ph', 'Search Patla No, weight, purity…')}
                 value={vaultSearch}
                 onChange={e => setVaultSearch(e.target.value)}
               />
             </div>
             {filteredVault.length > 0 && (
-              <button className="btn btn-ghost btn-sm" onClick={selectAllFiltered} title="Select all filtered items">
-                Select All
+              <button className="btn btn-ghost btn-sm" onClick={selectAllFiltered} title={t('select_all', 'Select all filtered items')}>
+                {t('select_all', 'Select All')}
               </button>
             )}
             {selectedIds.size > 0 && (
-              <button className="btn btn-ghost btn-sm" onClick={clearSelection} title="Clear selection">
-                Clear
+              <button className="btn btn-ghost btn-sm" onClick={clearSelection} title={t('clear', 'Clear selection')}>
+                {t('clear', 'Clear')}
               </button>
             )}
           </div>
 
           {/* Vault Items List */}
           {loadingVault ? (
-            <div className="loading-overlay"><div className="spinner" /> Loading vault stock…</div>
+            <div className="loading-overlay"><div className="spinner" /> {t('loading', 'Loading vault stock…')}</div>
           ) : vaultItems.length === 0 ? (
             <div className="empty-state" style={{ padding: '36px 20px' }}>
               <Package className="empty-state-icon" />
-              <div className="empty-state-title">Vault is empty</div>
-              <div className="empty-state-sub">Save a Receipt Voucher first to add silver bars to stock</div>
+              <div className="empty-state-title">{t('vault_empty', 'Vault is empty')}</div>
+              <div className="empty-state-sub">{t('vault_empty_sub', 'Save a Receipt Voucher first to add silver bars to stock')}</div>
             </div>
           ) : filteredVault.length === 0 ? (
             <div className="text-center text-muted" style={{ padding: '28px 0' }}>
-              No vault items match "{vaultSearch}"
+              {t('no_match_ph', 'No vault items match')} "{vaultSearch}"
             </div>
           ) : (
-            <div className="table-wrap" style={{ maxHeight: 420, overflowY: 'auto' }}>
-              <table>
-                <thead>
-                  <tr>
-                    <th style={{ width: 40, textAlign: 'center' }}></th>
-                    <th>Patla / Kacha No</th>
-                    <th>Gross (g)</th>
-                    <th>Tunch (%)</th>
-                    <th style={{ color: 'var(--clr-gold)' }}>Pure (g)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredVault.map(item => {
-                    const isSelected = selectedIds.has(item.id)
-                    return (
-                      <tr
-                        key={item.id}
-                        style={{
-                          cursor: 'pointer',
-                          background: isSelected ? 'rgba(179, 134, 27, 0.08)' : undefined,
-                        }}
-                        onClick={() => toggleVaultItem(item.id)}
-                      >
-                        <td style={{ textAlign: 'center' }}>
-                          {isSelected ? (
-                            <CheckSquare size={16} color="var(--clr-gold)" />
-                          ) : (
-                            <Square size={16} color="var(--clr-text-muted)" />
-                          )}
-                        </td>
-                        <td>
-                          <strong style={{ color: isSelected ? 'var(--clr-gold)' : 'var(--clr-text-primary)' }}>
-                            {item.patla_no}
-                          </strong>
-                          {item.description && (
-                            <div className="text-xs text-muted">{item.description}</div>
-                          )}
-                        </td>
-                        <td className="font-mono">
-                          {parseFloat(item.weight_g).toLocaleString('en-IN', { maximumFractionDigits: 3 })} g
-                        </td>
-                        <td className="font-mono">{parseFloat(item.tunch_pct).toFixed(3)}%</td>
-                        <td className="font-mono font-semibold" style={{ color: 'var(--clr-gold)' }}>
-                          {parseFloat(item.pure_g).toLocaleString('en-IN')} g
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <>
+              <div className="table-wrap mb-2" style={{ maxHeight: 420, overflow: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                <table style={{ minWidth: 460 }}>
+                  <thead>
+                    <tr>
+                      <th style={{ width: 36, minWidth: 36, textAlign: 'center' }}></th>
+                      <th style={{ minWidth: 120 }}>{t('th_patla_kacha_no', 'Patla / Kacha No')}</th>
+                      <th style={{ minWidth: 95 }}>{t('th_weight_g', 'Gross (g)')}</th>
+                      <th style={{ minWidth: 85 }}>{t('th_tunch_pct', 'Tunch (%)')}</th>
+                      <th style={{ minWidth: 85, color: 'var(--clr-gold)' }}>{t('th_pure_g', 'Pure (g)')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredVault.map(item => {
+                      const isSelected = selectedIds.has(item.id)
+                      return (
+                        <tr
+                          key={item.id}
+                          style={{
+                            cursor: 'pointer',
+                            background: isSelected ? 'rgba(179, 134, 27, 0.08)' : undefined,
+                          }}
+                          onClick={() => toggleVaultItem(item.id)}
+                        >
+                          <td style={{ textAlign: 'center' }}>
+                            {isSelected ? (
+                              <CheckSquare size={16} color="var(--clr-gold)" />
+                            ) : (
+                              <Square size={16} color="var(--clr-text-muted)" />
+                            )}
+                          </td>
+                          <td>
+                            <strong style={{ color: isSelected ? 'var(--clr-gold)' : 'var(--clr-text-primary)' }}>
+                              {item.patla_no}
+                            </strong>
+                            {item.description && (
+                              <div className="text-xs text-muted">{item.description}</div>
+                            )}
+                          </td>
+                          <td className="font-mono">
+                            {parseFloat(item.weight_g).toLocaleString('en-IN', { maximumFractionDigits: 3 })} g
+                          </td>
+                          <td className="font-mono">{parseFloat(item.tunch_pct).toFixed(3)}%</td>
+                          <td className="font-mono font-semibold" style={{ color: 'var(--clr-gold)' }}>
+                            {parseFloat(item.pure_g).toLocaleString('en-IN')} g
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <div className="table-scroll-hint mb-3">
+                {t('swipe_hint', '↔ Swipe table horizontally to see all columns')}
+              </div>
+            </>
           )}
 
-          <div className="text-xs text-muted mt-3">
-            Click any row to select or deselect items for delivery.
+          <div className="text-xs text-muted mt-2">
+            {t('click_row_select', 'Click any row to select or deselect items for delivery.')}
           </div>
         </div>
 
@@ -438,13 +445,13 @@ export default function IssueVoucherPage({ initialSelectedIds = [] }) {
         <div className="card card-gold">
           <div className="card-header">
             <div>
-              <span className="card-title">2. Items Selected for Issue</span>
+              <span className="card-title">{t('items_selected_title', '2. Items Selected for Issue')}</span>
               <p className="text-xs text-muted mt-1">
-                {totalCount} kacha(s) will be deducted from vault and delivered to customer
+                {totalCount} {t('deducted_sub', 'kacha(s) will be deducted from vault and delivered to customer')}
               </p>
             </div>
             <span className="badge badge-gold">
-              {totalCount} Lot(s)
+              {totalCount} {t('lots_badge', 'Lot(s)')}
             </span>
           </div>
 
@@ -452,33 +459,34 @@ export default function IssueVoucherPage({ initialSelectedIds = [] }) {
           {totalCount === 0 ? (
             <div className="empty-state" style={{ padding: '40px 20px' }}>
               <ArrowRight className="empty-state-icon" style={{ opacity: 0.3 }} />
-              <div className="empty-state-title">No kachas selected yet</div>
+              <div className="empty-state-title">{t('no_kachas_selected', 'No kachas selected yet')}</div>
               <div className="empty-state-sub">
-                Select items from the vault inventory on the left to add them to this voucher
+                {t('no_kachas_selected_sub', 'Select items from the vault inventory on the left to add them to this voucher')}
               </div>
             </div>
           ) : (
-            <div className="table-wrap mb-4">
-              <table>
-                <thead>
-                  <tr>
-                    <th style={{ width: 36 }}>#</th>
-                    <th>Patla / Kacha No</th>
-                    <th>Weight (g)</th>
-                    <th>Tunch (%)</th>
-                    <th style={{ color: 'var(--clr-gold)' }}>Pure (g)</th>
-                    <th style={{ width: 36 }}></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {/* Selected Vault Items */}
-                  {chosenVaultItems.map((item, idx) => (
-                    <tr key={item.id}>
-                      <td className="text-muted text-sm">{idx + 1}</td>
-                      <td>
-                        <strong>{item.patla_no}</strong>
-                        <span className="badge badge-gray" style={{ marginLeft: 6, fontSize: '0.65rem' }}>Vault</span>
-                      </td>
+            <>
+              <div className="table-wrap mb-2" style={{ overflow: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                <table style={{ minWidth: 480 }}>
+                  <thead>
+                    <tr>
+                      <th style={{ width: 32, minWidth: 32 }}>#</th>
+                      <th style={{ minWidth: 120 }}>{t('th_patla_kacha_no', 'Patla / Kacha No')}</th>
+                      <th style={{ minWidth: 95 }}>{t('th_weight_g', 'Weight (g)')}</th>
+                      <th style={{ minWidth: 85 }}>{t('th_tunch_pct', 'Tunch (%)')}</th>
+                      <th style={{ minWidth: 85, color: 'var(--clr-gold)' }}>{t('th_pure_g', 'Pure (g)')}</th>
+                      <th style={{ width: 36, minWidth: 36 }}></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {/* Selected Vault Items */}
+                    {chosenVaultItems.map((item, idx) => (
+                      <tr key={item.id}>
+                        <td className="text-muted text-sm">{idx + 1}</td>
+                        <td>
+                          <strong>{item.patla_no}</strong>
+                          <span className="badge badge-gray" style={{ marginLeft: 6, fontSize: '0.65rem' }}>{t('in_vault', 'Vault')}</span>
+                        </td>
                       <td className="font-mono">
                         {parseFloat(item.weight_g).toLocaleString('en-IN', { maximumFractionDigits: 3 })}
                       </td>
@@ -546,7 +554,7 @@ export default function IssueVoucherPage({ initialSelectedIds = [] }) {
                 </tbody>
                 <tfoot>
                   <tr>
-                    <td colSpan={2}>Total Outward</td>
+                    <td colSpan={2}>{t('total_outward', 'Total Outward')}</td>
                     <td className="font-mono">
                       {totalWeight.toLocaleString('en-IN', { maximumFractionDigits: 3 })} g
                     </td>
@@ -559,6 +567,10 @@ export default function IssueVoucherPage({ initialSelectedIds = [] }) {
                 </tfoot>
               </table>
             </div>
+            <div className="table-scroll-hint mb-3">
+              {t('swipe_hint', '↔ Swipe table horizontally to see all columns')}
+            </div>
+          </>
           )}
 
           {/* Optional: Add custom unvaulted lot button */}
@@ -568,17 +580,17 @@ export default function IssueVoucherPage({ initialSelectedIds = [] }) {
               onClick={addCustomLot}
               title="Add a custom/unvaulted bar not currently in inventory"
             >
-              <Plus size={13} /> Add Custom / Unvaulted Lot
+              <Plus size={13} /> {t('btn_add_custom_lot', 'Add Custom / Unvaulted Lot')}
             </button>
             <div className="text-xs text-muted">
-              KRS Rounding: ≤0.69 → 0 · ≥0.70 → +1
+              {t('krs_rounding_note', 'KRS Rounding: ≤0.69 → 0 · ≥0.70 → +1')}
             </div>
           </div>
 
           {/* Live Summary Cards */}
           <div className="stat-grid stat-grid-3 mt-6">
             <div className="stat-card" style={{ padding: '16px 20px' }}>
-              <div className="stat-label">Total Gross Weight</div>
+              <div className="stat-label">{t('total_gross_weight', 'Total Gross Weight')}</div>
               <div className="stat-value" style={{ fontSize: '1.25rem' }}>
                 {totalWeight.toLocaleString('en-IN', { maximumFractionDigits: 3 })} g
               </div>
@@ -586,19 +598,19 @@ export default function IssueVoucherPage({ initialSelectedIds = [] }) {
             </div>
 
             <div className="stat-card" style={{ padding: '16px 20px' }}>
-              <div className="stat-label">Weighted Purity</div>
+              <div className="stat-label">{t('weighted_purity', 'Weighted Purity')}</div>
               <div className="stat-value" style={{ fontSize: '1.25rem' }}>
                 {avgTunch.toFixed(3)}%
               </div>
-              <div className="stat-sub">{totalCount} kachas</div>
+              <div className="stat-sub">{totalCount} {t('kachas_count', 'kachas')}</div>
             </div>
 
             <div className="stat-card" style={{ padding: '16px 20px' }}>
-              <div className="stat-label">Total Pure Silver</div>
+              <div className="stat-label">{t('total_pure_silver', 'Total Pure Silver')}</div>
               <div className="stat-value gold" style={{ fontSize: '1.25rem' }}>
                 {totalPure.toLocaleString('en-IN')} g
               </div>
-              <div className="stat-sub">{gramsToKg(totalPure)} kg pure</div>
+              <div className="stat-sub">{gramsToKg(totalPure)} {t('kg_pure', 'kg pure')}</div>
             </div>
           </div>
         </div>
@@ -609,13 +621,13 @@ export default function IssueVoucherPage({ initialSelectedIds = [] }) {
         <div className="card mt-8" style={{ border: '2px solid var(--clr-gold-border)' }}>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <span className="badge badge-green">✓ Saved Successfully</span>
+              <span className="badge badge-green">{t('saved_successfully', '✓ Saved Successfully')}</span>
               <span className="text-sm font-semibold">
                 Issue Voucher #IV-{String(savedVoucher.voucher_no).padStart(4, '0')}
               </span>
             </div>
             <button className="btn btn-gold btn-sm" onClick={handlePrint}>
-              <Printer size={14} /> Print Formal Voucher
+              <Printer size={14} /> {t('btn_print_voucher', 'Print Formal Voucher')}
             </button>
           </div>
 
@@ -628,6 +640,7 @@ export default function IssueVoucherPage({ initialSelectedIds = [] }) {
 
 /* ── Formal Printable Issue Voucher Component ──────────────── */
 function IssueVoucherPrintView({ voucher }) {
+  const { t } = useLanguage()
   const lots = voucher.lots || []
   const totalWeight = lots.reduce((s, l) => s + (parseFloat(l.weight_g) || 0), 0)
   const totalPure = lots.reduce((s, l) => s + (parseFloat(l.pure_g) || 0), 0)
@@ -645,10 +658,10 @@ function IssueVoucherPrintView({ voucher }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #111827', paddingBottom: 16, marginBottom: 20 }}>
         <div>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.6rem', fontWeight: 700, color: '#B3861B' }}>
-            K R S SILVERS
+            {t('brand_title', 'K R S SILVERS')}
           </div>
           <div style={{ fontSize: '0.78rem', color: '#64748B', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600 }}>
-            Bullion &amp; Chit Management · Issue Voucher
+            {t('brand_sub', 'Bullion & Chit Management')} · {t('issue_voucher_title', 'Issue Voucher')}
           </div>
         </div>
         <div style={{ textAlign: 'right' }}>
@@ -656,7 +669,7 @@ function IssueVoucherPrintView({ voucher }) {
             #IV-{String(voucher.voucher_no).padStart(4, '0')}
           </div>
           <div style={{ color: '#64748B', fontSize: '0.82rem', marginTop: 3 }}>
-            Date: {format(new Date(voucher.voucher_date), 'dd MMMM yyyy')}
+            {t('date', 'Date')}: {format(new Date(voucher.voucher_date), 'dd MMMM yyyy')}
           </div>
         </div>
       </div>
@@ -664,21 +677,21 @@ function IssueVoucherPrintView({ voucher }) {
       {/* Recipient Details */}
       <div className="voucher-print-meta-grid">
         <div>
-          <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#64748B', fontWeight: 600 }}>Issued To (Member/Customer):</span>
+          <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#64748B', fontWeight: 600 }}>{t('issued_to', 'Issued To (Member/Customer):')}</span>
           <div style={{ fontWeight: 700, fontSize: '1rem', color: '#111827', marginTop: 2 }}>
             {voucher.customer?.name || 'Walk-in Customer'}
           </div>
           {voucher.customer?.phone && (
-            <div style={{ fontSize: '0.82rem', color: '#475569' }}>Phone: {voucher.customer.phone}</div>
+            <div style={{ fontSize: '0.82rem', color: '#475569' }}>{t('th_phone', 'Phone')}: {voucher.customer.phone}</div>
           )}
         </div>
         <div style={{ textAlign: 'right' }}>
-          <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#64748B', fontWeight: 600 }}>Transaction Type:</span>
+          <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#64748B', fontWeight: 600 }}>{t('txn_type', 'Transaction Type:')}</span>
           <div style={{ fontWeight: 700, color: '#A62626', fontSize: '0.95rem', marginTop: 2 }}>
-            Physical Vault Silver Issue
+            {t('phys_vault_issue', 'Physical Vault Silver Issue')}
           </div>
           <div style={{ fontSize: '0.82rem', color: '#64748B' }}>
-            Total Lots: {lots.length}
+            {t('total_lots', 'Total Lots:')} {lots.length}
           </div>
         </div>
       </div>
@@ -689,10 +702,10 @@ function IssueVoucherPrintView({ voucher }) {
           <thead>
             <tr style={{ background: '#F1F5F9', borderBottom: '1.5px solid #CBD5E1' }}>
               <th style={{ padding: '10px 12px', textAlign: 'left', width: 40 }}>#</th>
-              <th style={{ padding: '10px 12px', textAlign: 'left' }}>Patla / Kacha No</th>
-              <th style={{ padding: '10px 12px', textAlign: 'right' }}>Gross Weight (g)</th>
-              <th style={{ padding: '10px 12px', textAlign: 'right' }}>Tunch (%)</th>
-              <th style={{ padding: '10px 12px', textAlign: 'right', color: '#B3861B' }}>Pure Silver (g)</th>
+              <th style={{ padding: '10px 12px', textAlign: 'left' }}>{t('th_patla_kacha_no', 'Patla / Kacha No')}</th>
+              <th style={{ padding: '10px 12px', textAlign: 'right' }}>{t('th_weight_g', 'Gross Weight (g)')}</th>
+              <th style={{ padding: '10px 12px', textAlign: 'right' }}>{t('th_tunch_pct', 'Tunch (%)')}</th>
+              <th style={{ padding: '10px 12px', textAlign: 'right', color: '#B3861B' }}>{t('th_pure_g', 'Pure Silver (g)')}</th>
             </tr>
           </thead>
           <tbody>
@@ -714,7 +727,7 @@ function IssueVoucherPrintView({ voucher }) {
           </tbody>
           <tfoot>
             <tr style={{ background: '#F8FAFC', borderTop: '2px solid #CBD5E1' }}>
-              <td colSpan={2} style={{ padding: '12px', fontWeight: 700 }}>Total Silver Issued:</td>
+              <td colSpan={2} style={{ padding: '12px', fontWeight: 700 }}>{t('total_outward', 'Total Silver Issued')}:</td>
               <td style={{ padding: '12px', textAlign: 'right', fontWeight: 700 }}>
                 {totalWeight.toLocaleString('en-IN', { maximumFractionDigits: 3 })} g ({gramsToKg(totalWeight)} kg)
               </td>
@@ -731,12 +744,12 @@ function IssueVoucherPrintView({ voucher }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 48, paddingTop: 16 }}>
         <div style={{ textAlign: 'center', width: 200 }}>
           <div style={{ borderTop: '1px solid #64748B', paddingTop: 8, fontSize: '0.8rem', color: '#475569' }}>
-            Customer Signature
+            {t('customer_signature', 'Customer Signature')}
           </div>
         </div>
         <div style={{ textAlign: 'center', width: 200 }}>
           <div style={{ borderTop: '1px solid #64748B', paddingTop: 8, fontSize: '0.8rem', color: '#475569' }}>
-            For K R S Silvers (Authorized Signatory)
+            {t('authorized_signature', 'For K R S Silvers (Authorized Signatory)')}
           </div>
         </div>
       </div>

@@ -4,8 +4,10 @@ import toast from 'react-hot-toast'
 import { inventoryApi } from '../lib/api'
 import { gramsToKg, formatGrams } from '../lib/silverCalc'
 import { format, parseISO } from 'date-fns'
+import { useLanguage } from '../context/LanguageContext'
 
 export default function InventoryPage({ onNavigate }) {
+  const { t, lang } = useLanguage()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState(new Set())
@@ -56,8 +58,8 @@ export default function InventoryPage({ onNavigate }) {
     <div className="page">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Vault Inventory</h1>
-          <p className="page-sub">{inStockCount} kachas in stock</p>
+          <h1 className="page-title">{t('vault_inventory')}</h1>
+          <p className="page-sub">{inStockCount} {t('kachas_in_stock')}</p>
         </div>
         <div className="flex gap-2">
           <button
@@ -65,7 +67,7 @@ export default function InventoryPage({ onNavigate }) {
             className={`btn btn-sm ${showIssued ? 'btn-gold' : 'btn-ghost'}`}
             onClick={() => setShowIssued(p => !p)}
           >
-            {showIssued ? 'Showing All' : 'Show Issued Too'}
+            {showIssued ? t('btn_showing_all') : t('btn_show_issued_too')}
           </button>
         </div>
       </div>
@@ -75,31 +77,31 @@ export default function InventoryPage({ onNavigate }) {
         <div className="card card-gold mb-5" style={{ animation: 'fadeIn 0.2s ease' }}>
           <div className="card-header">
             <span className="card-title text-gold">
-              📊 Selection Calculator — {selected.size} Kachas Selected
+              📊 {t('selection_calc')} — {selected.size} {t('kachas_selected')}
             </span>
             <button
               id="btn-issue-selected"
               className="btn btn-maroon btn-sm"
               onClick={() => {
-                toast.success(`${selected.size} kacha(s) transferred to Issue Voucher`)
+                toast.success(`${selected.size} ${lang === 'ta' ? 'கச்சா வழங்கல் வவுச்சருக்கு மாற்றப்பட்டது' : 'kacha(s) transferred to Issue Voucher'}`)
                 onNavigate('issue', Array.from(selected))
               }}
             >
-              <Send /> Issue Selected
+              <Send /> {t('btn_issue_selected')}
             </button>
           </div>
           <div className="stat-grid stat-grid-3">
             <div className="stat-card">
-              <div className="stat-label">Total Gross Weight</div>
+              <div className="stat-label">{t('total_gross_weight')}</div>
               <div className="stat-value gold">{totalSelWeight.toLocaleString('en-IN', { maximumFractionDigits: 3 })} g</div>
               <div className="stat-sub">{gramsToKg(totalSelWeight)} kg</div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Avg Tunch</div>
+              <div className="stat-label">{t('weighted_purity')}</div>
               <div className="stat-value gold">{avgTunch.toFixed(3)}%</div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Total Pure Fine</div>
+              <div className="stat-label">{t('total_pure_silver')}</div>
               <div className="stat-value gold">{totalSelPure.toLocaleString('en-IN')} g</div>
               <div className="stat-sub">{gramsToKg(totalSelPure)} kg</div>
             </div>
@@ -108,40 +110,42 @@ export default function InventoryPage({ onNavigate }) {
       )}
 
       {loading ? (
-        <div className="loading-overlay"><div className="spinner" /> Loading inventory…</div>
+        <div className="loading-overlay"><div className="spinner" /> {t('loading')}</div>
       ) : items.length === 0 ? (
         <div className="empty-state">
           <Package size={48} style={{ opacity: 0.3 }} />
-          <div className="empty-state-title">Vault is empty</div>
-          <div className="empty-state-sub">Save a receipt voucher to add stock</div>
+          <div className="empty-state-title">{t('vault_empty')}</div>
+          <div className="empty-state-sub">{t('vault_empty_sub')}</div>
         </div>
       ) : (
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th style={{ width: 40 }}>
-                  <button
-                    className="btn btn-ghost btn-sm btn-icon"
-                    onClick={toggleAll}
-                    title="Select all in-stock"
-                    style={{ padding: 2 }}
-                  >
-                    {selected.size === inStockCount && inStockCount > 0
-                      ? <CheckSquare size={15} style={{ color: 'var(--clr-gold)' }} />
-                      : <Square size={15} />
-                    }
-                  </button>
-                </th>
-                <th>Patla / Kacha No.</th>
-                <th>Description</th>
-                <th>Weight (g)</th>
-                <th>Tunch (%)</th>
-                <th>Pure Fine (g)</th>
-                <th>Status</th>
-                <th>Date Added</th>
-              </tr>
-            </thead>
+        <>
+          <div className="table-scroll-hint mb-2">{t('swipe_hint')}</div>
+          <div className="table-wrap" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+            <table style={{ minWidth: 680 }}>
+              <thead>
+                <tr>
+                  <th style={{ width: 40 }}>
+                    <button
+                      className="btn btn-ghost btn-sm btn-icon"
+                      onClick={toggleAll}
+                      title={t('select_all')}
+                      style={{ padding: 2 }}
+                    >
+                      {selected.size === inStockCount && inStockCount > 0
+                        ? <CheckSquare size={15} style={{ color: 'var(--clr-gold)' }} />
+                        : <Square size={15} />
+                      }
+                    </button>
+                  </th>
+                  <th>{t('th_patla_kacha_no')}</th>
+                  <th>{t('th_particulars')}</th>
+                  <th>{t('th_weight_g')}</th>
+                  <th>{t('th_tunch_pct')}</th>
+                  <th>{t('th_pure_g')}</th>
+                  <th>{t('th_status')}</th>
+                  <th>{t('th_inward_date')}</th>
+                </tr>
+              </thead>
             <tbody>
               {items.map(item => {
                 const isStock = item.status === 'in_stock'
@@ -179,8 +183,8 @@ export default function InventoryPage({ onNavigate }) {
                     </td>
                     <td>
                       {isStock
-                        ? <span className="badge badge-green">In Stock</span>
-                        : <span className="badge badge-gray">Issued</span>
+                        ? <span className="badge badge-green">{t('status_in_stock')}</span>
+                        : <span className="badge badge-gray">{t('status_issued')}</span>
                       }
                     </td>
                     <td className="text-secondary text-sm">
@@ -192,6 +196,7 @@ export default function InventoryPage({ onNavigate }) {
             </tbody>
           </table>
         </div>
+      </>
       )}
     </div>
   )

@@ -5,8 +5,10 @@ import { getTotalFineDemanded, gramsToKg, krsRound } from '../../lib/silverCalc'
 import { format, parseISO } from 'date-fns'
 import toast from 'react-hot-toast'
 import { Printer, X } from 'lucide-react'
+import { useLanguage } from '../../context/LanguageContext'
 
 export default function CustomerLedgerModal({ customer, onClose }) {
+  const { t, lang } = useLanguage()
   const [loading, setLoading] = useState(true)
   const [memberships, setMemberships] = useState([])   // group_members + groups
   const [txnLogs, setTxnLogs] = useState([])           // raw transaction_log entries
@@ -126,7 +128,7 @@ export default function CustomerLedgerModal({ customer, onClose }) {
       <div className="modal modal-xl">
         <div className="modal-header no-print">
           <div>
-            <div className="modal-title">Account Ledger — {customer.name}</div>
+            <div className="modal-title">{t('customer_ledger_title')} — {customer.name}</div>
             <div className="text-xs text-muted mt-1">
               {customer.phone && `📞 ${customer.phone}`}
               {customer.city && ` · ${customer.city}`}
@@ -134,7 +136,7 @@ export default function CustomerLedgerModal({ customer, onClose }) {
           </div>
           <div className="flex gap-2">
             <button className="btn btn-ghost btn-sm" onClick={() => window.print()}>
-              <Printer size={13} /> Print
+              <Printer size={13} /> {t('print')}
             </button>
             <button className="btn btn-ghost btn-sm btn-icon" onClick={onClose}><X size={16} /></button>
           </div>
@@ -171,13 +173,13 @@ export default function CustomerLedgerModal({ customer, onClose }) {
             flexWrap: 'wrap',
           }}>
             <div className="stat-card" style={{ flex: 1, minWidth: 160 }}>
-              <div className="stat-label">Net Closing Balance</div>
+              <div className="stat-label">{t('net_closing_balance')}</div>
               <div className={`stat-value ${finalBalance > 0 ? 'red' : finalBalance < 0 ? 'green' : ''}`}>
                 {finalBalance > 0
-                  ? `${Math.abs(finalBalance).toLocaleString('en-IN')} g Due`
+                  ? `${Math.abs(finalBalance).toLocaleString('en-IN')} g ${t('badge_due')}`
                   : finalBalance < 0
-                  ? `+${Math.abs(finalBalance).toLocaleString('en-IN')} g Excess`
-                  : 'Settled'
+                  ? `+${Math.abs(finalBalance).toLocaleString('en-IN')} g ${t('badge_excess')}`
+                  : t('badge_settled')
                 }
               </div>
             </div>
@@ -185,25 +187,27 @@ export default function CustomerLedgerModal({ customer, onClose }) {
 
           {/* Main ledger table */}
           {loading ? (
-            <div className="loading-overlay"><div className="spinner" /> Building ledger…</div>
+            <div className="loading-overlay"><div className="spinner" /> {t('loading')}</div>
           ) : ledgerRows.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-state-title">No transactions found for this customer</div>
+              <div className="empty-state-title">{lang === 'ta' ? 'இந்த வாடிக்கையாளருக்கு பரிவர்த்தனைகள் எதுவும் இல்லை' : 'No transactions found for this customer'}</div>
             </div>
           ) : (
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Ref / Voucher</th>
-                    <th>Transaction Particulars</th>
-                    <th>Demanded / Debit (g)</th>
-                    <th>Paid / Credit (g)</th>
-                    <th style={{ color: 'var(--clr-danger-text)', minWidth: 120 }}>Closing Balance</th>
-                    <th style={{ color: 'var(--clr-success-text)', minWidth: 120 }}>Closing Excess</th>
-                  </tr>
-                </thead>
+            <>
+              <div className="table-scroll-hint mb-2">{t('swipe_hint')}</div>
+              <div className="table-wrap" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                <table style={{ minWidth: 680 }}>
+                  <thead>
+                    <tr>
+                      <th>{t('th_ledger_date')}</th>
+                      <th>{t('th_ledger_ref')}</th>
+                      <th>{t('th_ledger_desc')}</th>
+                      <th>{t('th_ledger_debit')}</th>
+                      <th>{t('th_ledger_credit')}</th>
+                      <th style={{ color: 'var(--clr-danger-text)', minWidth: 120 }}>{t('th_ledger_close_due')}</th>
+                      <th style={{ color: 'var(--clr-success-text)', minWidth: 120 }}>{t('th_ledger_close_excess')}</th>
+                    </tr>
+                  </thead>
                 <tbody>
                   {ledgerRows.map((row, i) => {
                     const isBalance = row.closingBalance > 0
@@ -265,11 +269,12 @@ export default function CustomerLedgerModal({ customer, onClose }) {
                 </tbody>
               </table>
             </div>
+          </>
           )}
         </div>
 
         <div className="modal-footer no-print">
-          <button className="btn btn-ghost" onClick={onClose}>Close</button>
+          <button className="btn btn-ghost" onClick={onClose}>{t('close')}</button>
         </div>
       </div>
     </div>

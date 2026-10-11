@@ -3,8 +3,10 @@ import { customersApi, membersApi } from '../../lib/api'
 import { X, Save } from 'lucide-react'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
+import { useLanguage } from '../../context/LanguageContext'
 
 export default function AddMemberModal({ group, onClose, onSaved }) {
+  const { t, lang } = useLanguage()
   const [customers, setCustomers] = useState([])
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({
@@ -52,15 +54,15 @@ export default function AddMemberModal({ group, onClose, onSaved }) {
     <div className="modal-backdrop" role="dialog" aria-modal="true">
       <div className="modal modal-sm">
         <div className="modal-header">
-          <span className="modal-title">Add Member — {group.name}</span>
+          <span className="modal-title">{t('modal_add_member')} — {group.name}</span>
           <button className="btn btn-ghost btn-sm btn-icon" onClick={onClose}><X size={16} /></button>
         </div>
         <div className="modal-body">
           <div className="flex flex-col gap-4">
             <div className="form-group">
-              <label className="form-label" htmlFor="mem-customer">Customer *</label>
+              <label className="form-label" htmlFor="mem-customer">{t('cust_req')}</label>
               <select id="mem-customer" className="form-control" value={form.customer_id} onChange={e => set('customer_id', e.target.value)}>
-                <option value="">— Select Customer —</option>
+                <option value="">{t('select_customer')}</option>
                 {customers.map(c => (
                   <option key={c.id} value={c.id}>{c.name} {c.phone ? `(${c.phone})` : ''}</option>
                 ))}
@@ -68,30 +70,30 @@ export default function AddMemberModal({ group, onClose, onSaved }) {
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="mem-ticket">Ticket No. *</label>
+              <label className="form-label" htmlFor="mem-ticket">{t('ticket_req')}</label>
               <input id="mem-ticket" type="number" min="1" className="form-control" value={form.ticket_no} onChange={e => set('ticket_no', e.target.value)} placeholder="e.g. 1" />
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="mem-joining-month">Joining Month (if late joiner)</label>
+              <label className="form-label" htmlFor="mem-joining-month">{t('join_month_lbl')}</label>
               <input id="mem-joining-month" type="number" min="1" max={group.num_months} className="form-control" value={form.joining_month} onChange={e => set('joining_month', e.target.value)} />
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="mem-joining-date">Joining Date</label>
+              <label className="form-label" htmlFor="mem-joining-date">{t('join_date_lbl')}</label>
               <input id="mem-joining-date" type="date" className="form-control" value={form.joining_date} onChange={e => set('joining_date', e.target.value)} />
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="mem-deposit">Opening Fine Deposited (g) — for late joiners</label>
+              <label className="form-label" htmlFor="mem-deposit">{t('opening_deposit_lbl')}</label>
               <input id="mem-deposit" type="number" step="any" min="0" className="form-control" value={form.fine_deposited} onChange={e => set('fine_deposited', e.target.value)} />
             </div>
           </div>
         </div>
         <div className="modal-footer">
-          <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+          <button className="btn btn-ghost" onClick={onClose}>{t('cancel')}</button>
           <button id="btn-save-member" className="btn btn-gold" onClick={handleSave} disabled={saving}>
-            {saving ? <><div className="spinner" style={{ width: 13, height: 13, borderWidth: 2 }} /> Adding…</> : <><Save size={13} /> Add Member</>}
+            {saving ? <><div className="spinner" style={{ width: 13, height: 13, borderWidth: 2 }} /> {t('saving')}</> : <><Save size={13} /> {t('modal_add_member')}</>}
           </button>
         </div>
       </div>

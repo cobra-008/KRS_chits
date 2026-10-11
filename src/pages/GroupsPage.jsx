@@ -5,8 +5,10 @@ import { groupsApi } from '../lib/api'
 import GroupFormModal from './modals/GroupFormModal'
 import { gramsToKg } from '../lib/silverCalc'
 import { format, parseISO } from 'date-fns'
+import { useLanguage } from '../context/LanguageContext'
 
 export default function GroupsPage() {
+  const { t, lang } = useLanguage()
   const [groups, setGroups] = useState([])
   const [loading, setLoading] = useState(true)
   const [formModal, setFormModal] = useState(null) // null | 'new' | group
@@ -44,38 +46,40 @@ export default function GroupsPage() {
     <div className="page">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Group Management</h1>
-          <p className="page-sub">Silver chit schemes · Create and manage groups</p>
+          <h1 className="page-title">{t('group_management')}</h1>
+          <p className="page-sub">{t('group_mgmt_sub')}</p>
         </div>
         <button id="btn-new-group" className="btn btn-gold" onClick={() => setFormModal('new')}>
-          <Plus /> Create Group
+          <Plus /> {t('btn_new_group')}
         </button>
       </div>
 
       {loading ? (
-        <div className="loading-overlay"><div className="spinner" /> Loading…</div>
+        <div className="loading-overlay"><div className="spinner" /> {t('loading')}</div>
       ) : groups.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-state-title">No groups created yet</div>
+          <div className="empty-state-title">{t('no_groups_created')}</div>
           <button className="btn btn-gold mt-4" onClick={() => setFormModal('new')}>
-            <Plus /> Create First Group
+            <Plus /> {t('btn_create_first_group')}
           </button>
         </div>
       ) : (
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Group Name</th>
-                <th>Draw Day</th>
-                <th>Duration</th>
-                <th>Unit Limit</th>
-                <th>Capacity / Member</th>
-                <th>Months Done</th>
-                <th>Start Date</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
+        <>
+          <div className="table-scroll-hint mb-2">{t('swipe_hint')}</div>
+          <div className="table-wrap" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+            <table style={{ minWidth: 650 }}>
+              <thead>
+                <tr>
+                  <th>{t('th_group_name')}</th>
+                  <th>{t('th_draw_day')}</th>
+                  <th>{t('th_duration')}</th>
+                  <th>{t('th_unit_limit')}</th>
+                  <th>{t('th_capacity_member')}</th>
+                  <th>{t('th_months_done')}</th>
+                  <th>{t('th_start_date')}</th>
+                  <th>{t('th_actions')}</th>
+                </tr>
+              </thead>
             <tbody>
               {groups.map(group => (
                 <tr key={group.id}>
@@ -139,6 +143,7 @@ export default function GroupsPage() {
             </tbody>
           </table>
         </div>
+      </>
       )}
 
       {/* Group Form Modal */}
@@ -155,19 +160,20 @@ export default function GroupsPage() {
         <div className="modal-backdrop">
           <div className="modal modal-sm">
             <div className="modal-header">
-              <span className="modal-title">Delete Group</span>
+              <span className="modal-title">{t('delete')}</span>
               <button className="btn btn-ghost btn-sm btn-icon" onClick={() => setDeleteConfirm(null)}>✕</button>
             </div>
             <div className="modal-body">
               <p style={{ color: 'var(--clr-text-secondary)', lineHeight: 1.6 }}>
-                Delete <strong style={{ color: 'var(--clr-text-primary)' }}>{deleteConfirm.name}</strong>?
-                This will also remove all member enrollments.
-                Voucher history is preserved.
+                {lang === 'ta'
+                  ? `${deleteConfirm.name} குழுவை நிச்சயமாக நீக்க வேண்டுமா? இது அனைத்து உறுப்பினர் பதிவுகளையும் நீக்கிவிடும்.`
+                  : `Delete ${deleteConfirm.name}? This will also remove all member enrollments. Voucher history is preserved.`
+                }
               </p>
             </div>
             <div className="modal-footer">
-              <button className="btn btn-ghost" onClick={() => setDeleteConfirm(null)}>Cancel</button>
-              <button className="btn btn-maroon" onClick={() => handleDelete(deleteConfirm)}>Delete</button>
+              <button className="btn btn-ghost" onClick={() => setDeleteConfirm(null)}>{t('cancel')}</button>
+              <button className="btn btn-maroon" onClick={() => handleDelete(deleteConfirm)}>{t('delete')}</button>
             </div>
           </div>
         </div>

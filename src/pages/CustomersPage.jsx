@@ -4,8 +4,10 @@ import toast from 'react-hot-toast'
 import { customersApi } from '../lib/api'
 import CustomerLedgerModal from './modals/CustomerLedgerModal'
 import CustomerFormModal from './modals/CustomerFormModal'
+import { useLanguage } from '../context/LanguageContext'
 
 export default function CustomersPage() {
+  const { t, lang } = useLanguage()
   const [customers, setCustomers] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -36,15 +38,15 @@ export default function CustomersPage() {
     <div className="page">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Customer Accounts</h1>
-          <p className="page-sub">{customers.length} registered customers · Double-click a name to view full ledger</p>
+          <h1 className="page-title">{t('customer_accounts')}</h1>
+          <p className="page-sub">{customers.length} {t('customer_accounts_sub')}</p>
         </div>
         <button
           id="btn-new-customer"
           className="btn btn-gold"
           onClick={() => setFormModal('new')}
         >
-          <UserPlus /> Add Customer
+          <UserPlus /> {t('btn_add_customer')}
         </button>
       </div>
 
@@ -58,37 +60,39 @@ export default function CustomersPage() {
           id="customer-search"
           className="form-control"
           style={{ paddingLeft: 36 }}
-          placeholder="Search by name, phone or city…"
+          placeholder={t('search_customer_ph')}
           value={search}
           onChange={e => setSearch(e.target.value)}
         />
       </div>
 
       {loading ? (
-        <div className="loading-overlay"><div className="spinner" /> Loading…</div>
+        <div className="loading-overlay"><div className="spinner" /> {t('loading')}</div>
       ) : filtered.length === 0 ? (
         <div className="empty-state">
           <UserPlus size={48} style={{ opacity: 0.3 }} />
-          <div className="empty-state-title">No customers found</div>
-          <div className="empty-state-sub">Add your first customer account</div>
+          <div className="empty-state-title">{t('no_customers_found')}</div>
+          <div className="empty-state-sub">{t('add_first_customer')}</div>
           <button className="btn btn-gold mt-4" onClick={() => setFormModal('new')}>
-            <Plus /> Add Customer
+            <Plus /> {t('btn_add_customer')}
           </button>
         </div>
       ) : (
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Customer</th>
-                <th>Phone</th>
-                <th>WhatsApp</th>
-                <th>City</th>
-                <th>ID Proof</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
+        <>
+          <div className="table-scroll-hint mb-2">{t('swipe_hint')}</div>
+          <div className="table-wrap" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+            <table style={{ minWidth: 620 }}>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>{t('th_customer')}</th>
+                  <th>{t('phone_label')}</th>
+                  <th>{t('th_whatsapp')}</th>
+                  <th>{t('th_city')}</th>
+                  <th>{t('th_id_proof')}</th>
+                  <th>{t('th_actions')}</th>
+                </tr>
+              </thead>
             <tbody>
               {filtered.map((customer, idx) => (
                 <tr
@@ -127,12 +131,12 @@ export default function CustomersPage() {
                         onClick={(e) => { e.stopPropagation(); setLedgerCustomer(customer) }}
                         title="View ledger"
                       >
-                        <Eye size={12} /> Ledger
+                        <Eye size={12} /> {t('btn_view_ledger')}
                       </button>
                       <button
                         className="btn btn-ghost btn-sm btn-icon"
                         onClick={(e) => { e.stopPropagation(); setFormModal(customer) }}
-                        title="Edit"
+                        title={t('edit')}
                       >
                         <Edit2 size={12} />
                       </button>
@@ -143,6 +147,7 @@ export default function CustomersPage() {
             </tbody>
           </table>
         </div>
+      </>
       )}
 
       {formModal && (
