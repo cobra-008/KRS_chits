@@ -433,7 +433,7 @@ export default function IssueVoucherPage({ initialSelectedIds = [] }) {
           ) : (
             <>
               <div className="table-wrap mb-2" style={{ maxHeight: 420, overflow: 'auto', WebkitOverflowScrolling: 'touch' }}>
-                <table style={{ width: '100%' }}>
+                <table style={{ minWidth: 440, width: '100%' }}>
                   <thead>
                     <tr>
                       <th style={{ width: 32, textAlign: 'center' }}></th>
@@ -535,7 +535,7 @@ export default function IssueVoucherPage({ initialSelectedIds = [] }) {
           ) : (
             <>
               <div className="table-wrap mb-2" style={{ overflow: 'auto', WebkitOverflowScrolling: 'touch' }}>
-                <table style={{ width: '100%' }}>
+                <table style={{ minWidth: 460, width: '100%' }}>
                   <thead>
                     <tr>
                       <th style={{ width: 26, textAlign: 'center' }}>#</th>
