@@ -24,3 +24,7 @@ ADD COLUMN IF NOT EXISTS delivery_status TEXT DEFAULT 'hold_excess';
 
 ALTER TABLE chit_draws 
 ADD COLUMN IF NOT EXISTS withdrawer_share_pct NUMERIC(6,2) DEFAULT 100;
+
+-- 5. Drop check constraints on transaction_log if present to allow flexible ledger types
+ALTER TABLE transaction_log 
+DROP CONSTRAINT IF EXISTS transaction_log_type_check;

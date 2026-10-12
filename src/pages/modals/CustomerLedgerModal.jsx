@@ -129,6 +129,8 @@ export default function CustomerLedgerModal({ customer, onClose }) {
     }
   }
 
+  const totalDebits = ledgerRows.reduce((s, r) => s + (r.debitG || 0), 0)
+  const totalCredits = ledgerRows.reduce((s, r) => s + (r.creditG || 0), 0)
   const finalBalance = ledgerRows.length > 0 ? ledgerRows[ledgerRows.length - 1].closingBalance : 0
 
   return (
@@ -153,7 +155,7 @@ export default function CustomerLedgerModal({ customer, onClose }) {
         <div className="modal-body">
           {/* Group enrollments */}
           {memberships.length > 0 && (
-            <div className="flex gap-2 mb-5" style={{ flexWrap: 'wrap' }}>
+            <div className="flex gap-2 mb-4" style={{ flexWrap: 'wrap' }}>
               {memberships.map(m => (
                 <div key={m.id} style={{
                   background: 'var(--clr-gold-bg)',
@@ -164,6 +166,7 @@ export default function CustomerLedgerModal({ customer, onClose }) {
                 }}>
                   <span className="text-gold font-semibold">{m.groups?.name}</span>
                   <span className="text-muted"> · Ticket #{m.ticket_no}</span>
+                  <span className="text-muted"> · {m.share_pct || 100}% Share</span>
                   <span className="text-muted"> · {gramsToKg(m.groups?.num_months * m.groups?.unit_limit_g)} kg liability</span>
                   {m.is_withdrawn && (
                     <span className="badge badge-maroon" style={{ marginLeft: 6, fontSize: '0.65rem' }}>Withdrawn M{m.withdrawal_month}</span>
@@ -173,22 +176,36 @@ export default function CustomerLedgerModal({ customer, onClose }) {
             </div>
           )}
 
-          {/* Final balance summary */}
-          <div style={{
-            display: 'flex',
-            gap: 16,
-            marginBottom: 20,
-            flexWrap: 'wrap',
-          }}>
-            <div className="stat-card" style={{ flex: 1, minWidth: 160 }}>
-              <div className="stat-label">{t('net_closing_balance')}</div>
-              <div className={`stat-value ${finalBalance > 0 ? 'red' : finalBalance < 0 ? 'green' : ''}`}>
+          {/* Top 3 Stat Cards: Debits (Due Demands), Credits (Deposits / Chit Disbursals), Net Position */}
+          <div className="stats-grid mb-5" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+            <div className="stat-card" style={{ borderLeft: '4px solid var(--clr-danger)' }}>
+              <div className="stat-label">TOTAL DEMANDED / ISSUED (DUE)</div>
+              <div className="stat-value font-mono text-danger" style={{ fontSize: '1.4rem' }}>
+                {totalDebits.toLocaleString('en-IN', { maximumFractionDigits: 3 })} g
+              </div>
+              <div className="stat-sub">Total fine owed by customer</div>
+            </div>
+
+            <div className="stat-card" style={{ borderLeft: '4px solid var(--clr-success)' }}>
+              <div className="stat-label">TOTAL CREDITED / ADVANCE (EXCESS)</div>
+              <div className="stat-value font-mono text-success" style={{ fontSize: '1.4rem' }}>
+                {totalCredits.toLocaleString('en-IN', { maximumFractionDigits: 3 })} g
+              </div>
+              <div className="stat-sub">Receipts + Chit net silver held</div>
+            </div>
+
+            <div className="stat-card" style={{ borderLeft: `4px solid ${finalBalance > 0 ? 'var(--clr-danger)' : finalBalance < 0 ? 'var(--clr-success)' : 'var(--clr-gold)'}` }}>
+              <div className="stat-label">{t('net_closing_balance', 'NET CLOSING BALANCE')}</div>
+              <div className={`stat-value font-mono ${finalBalance > 0 ? 'text-danger' : finalBalance < 0 ? 'text-success' : 'text-gold'}`} style={{ fontSize: '1.4rem' }}>
                 {finalBalance > 0
-                  ? `${Math.abs(finalBalance).toLocaleString('en-IN')} g ${t('badge_due')}`
+                  ? `${Math.abs(finalBalance).toLocaleString('en-IN')} g ${t('badge_due', 'Due')}`
                   : finalBalance < 0
-                  ? `+${Math.abs(finalBalance).toLocaleString('en-IN')} g ${t('badge_excess')}`
-                  : t('badge_settled')
+                  ? `+${Math.abs(finalBalance).toLocaleString('en-IN')} g ${t('badge_excess', 'Excess')}`
+                  : t('badge_settled', 'Settled (0 g)')
                 }
+              </div>
+              <div className="stat-sub">
+                {finalBalance > 0 ? 'Customer owes silver' : finalBalance < 0 ? 'Held as excess fine with us' : 'Account fully balanced'}
               </div>
             </div>
           </div>

@@ -87,34 +87,33 @@ export default function AddMemberModal({ group, onClose, onSaved }) {
 
   return (
     <div className="modal-backdrop" role="dialog" aria-modal="true">
-      <div className="modal modal-md" style={{ maxWidth: 540, background: '#0e1420', border: '1px solid rgba(255,255,255,0.1)' }}>
+      <div className="modal modal-md">
         {/* Header */}
-        <div className="modal-header" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '16px 20px' }}>
+        <div className="modal-header">
           <div className="flex items-center gap-2">
-            <UserPlus size={20} style={{ color: '#f59e0b' }} />
-            <span className="modal-title" style={{ fontSize: '1.15rem', fontWeight: 700, color: '#f3f4f6' }}>
+            <UserPlus size={20} className="text-gold" />
+            <span className="modal-title">
               {t('modal_add_member', 'Enroll Member in Scheme')}
             </span>
           </div>
-          <button className="btn btn-ghost btn-sm btn-icon" onClick={onClose} style={{ color: '#9ca3af' }}>
+          <button className="btn btn-ghost btn-sm btn-icon" onClick={onClose}>
             <X size={18} />
           </button>
         </div>
 
         {/* Body */}
-        <div className="modal-body" style={{ padding: '20px' }}>
+        <div className="modal-body">
           <div className="flex flex-col gap-4">
             {/* Select Scheme / Group */}
             <div className="form-group">
-              <label className="form-label" style={{ fontSize: '0.85rem', color: '#9ca3af', marginBottom: 6 }}>
-                {lang === 'ta' ? 'திட்டம் / குழுவை தேர்ந்தெடுக்கவும்:' : 'Select Scheme / Group:'} <span style={{ color: '#ef4444' }}>*</span>
+              <label className="form-label">
+                {lang === 'ta' ? 'திட்டம் / குழுவை தேர்ந்தெடுக்கவும்:' : 'Select Scheme / Group:'} <span className="text-danger">*</span>
               </label>
               <select
                 id="select-scheme-group"
                 className="form-control"
                 value={selectedGroupId}
                 onChange={e => setSelectedGroupId(e.target.value)}
-                style={{ background: '#090d16', borderColor: '#222f46', color: '#f9fafb', height: 44, borderRadius: 8 }}
               >
                 {allGroups.map(g => (
                   <option key={g.id} value={g.id}>
@@ -126,15 +125,14 @@ export default function AddMemberModal({ group, onClose, onSaved }) {
 
             {/* Select Customer */}
             <div className="form-group">
-              <label className="form-label" style={{ fontSize: '0.85rem', color: '#9ca3af', marginBottom: 6 }}>
-                {lang === 'ta' ? 'வாடிக்கையாளரை தேர்ந்தெடுக்கவும்:' : 'Select Customer:'} <span style={{ color: '#ef4444' }}>*</span>
+              <label className="form-label">
+                {lang === 'ta' ? 'வாடிக்கையாளரை தேர்ந்தெடுக்கவும்:' : 'Select Customer:'} <span className="text-danger">*</span>
               </label>
               <select
                 id="select-customer"
                 className="form-control"
                 value={customerId}
                 onChange={e => setCustomerId(e.target.value)}
-                style={{ background: '#090d16', borderColor: '#222f46', color: '#f9fafb', height: 44, borderRadius: 8 }}
               >
                 <option value="">{t('select_customer', 'Select Customer')}</option>
                 {customers.map(c => (
@@ -147,26 +145,25 @@ export default function AddMemberModal({ group, onClose, onSaved }) {
 
             {/* Ticket Number */}
             <div className="form-group">
-              <label className="form-label" style={{ fontSize: '0.85rem', color: '#9ca3af', marginBottom: 6 }}>
-                {lang === 'ta' ? `டிக்கெட் எண் (1 - ${currentGroup.num_months || 20}):` : `Ticket Number (1 - ${currentGroup.num_months || 20}):`} <span style={{ color: '#ef4444' }}>*</span>
+              <label className="form-label">
+                {lang === 'ta' ? `டிக்கெட் எண் (1 - ${currentGroup.num_months || 20}):` : `Ticket Number (1 - ${currentGroup.num_months || 20}):`} <span className="text-danger">*</span>
               </label>
               <input
                 id="mem-ticket-no"
                 type="number"
                 min="1"
                 max={currentGroup.num_months || 20}
-                className="form-control font-mono"
+                className="form-control font-mono font-bold"
                 value={ticketNo}
                 onChange={e => setTicketNo(e.target.value)}
                 placeholder="6"
-                style={{ background: '#090d16', borderColor: '#222f46', color: '#f59e0b', fontWeight: 700, height: 44, borderRadius: 8 }}
               />
             </div>
 
             {/* Participating Percentage / Portion Ratio */}
             <div className="form-group">
-              <label className="form-label" style={{ fontSize: '0.85rem', color: '#9ca3af', marginBottom: 8 }}>
-                {lang === 'ta' ? 'பங்கு சதவீதம் (%) / விகிதம்:' : 'Participating Percentage (%) / Portion Ratio:'} <span style={{ color: '#ef4444' }}>*</span>
+              <label className="form-label">
+                {lang === 'ta' ? 'பங்கு சதவீதம் (%) / விகிதம்:' : 'Participating Percentage (%) / Portion Ratio:'} <span className="text-danger">*</span>
               </label>
 
               {/* 4 Capsule Buttons */}
@@ -177,20 +174,8 @@ export default function AddMemberModal({ group, onClose, onSaved }) {
                     <button
                       key={opt.pct}
                       type="button"
+                      className={`btn btn-sm font-mono ${isActive ? 'btn-gold' : 'btn-secondary'}`}
                       onClick={() => setSharePct(opt.pct)}
-                      style={{
-                        padding: '10px 4px',
-                        borderRadius: 8,
-                        fontSize: '0.88rem',
-                        fontWeight: 700,
-                        fontFamily: 'monospace',
-                        textAlign: 'center',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease',
-                        background: isActive ? 'rgba(245, 158, 11, 0.15)' : '#121929',
-                        color: isActive ? '#f59e0b' : '#9ca3af',
-                        border: isActive ? '1.5px solid #f59e0b' : '1px solid rgba(255,255,255,0.08)',
-                      }}
                     >
                       {opt.pct}% ({opt.ratio})
                     </button>
@@ -200,10 +185,9 @@ export default function AddMemberModal({ group, onClose, onSaved }) {
 
               {/* Portion description display dropdown */}
               <select
-                className="form-control font-mono"
+                className="form-control font-mono font-semibold"
                 value={sharePct}
                 onChange={e => setSharePct(Number(e.target.value))}
-                style={{ background: '#090d16', borderColor: '#222f46', color: '#f9fafb', height: 44, borderRadius: 8, fontSize: '0.88rem', fontWeight: 600 }}
               >
                 {portionOptions.map(opt => (
                   <option key={opt.pct} value={opt.pct}>
@@ -216,12 +200,8 @@ export default function AddMemberModal({ group, onClose, onSaved }) {
         </div>
 
         {/* Footer */}
-        <div className="modal-footer" style={{ borderTop: '1px solid rgba(255,255,255,0.08)', padding: '14px 20px', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-          <button
-            className="btn btn-ghost"
-            onClick={onClose}
-            style={{ color: '#9ca3af', background: 'transparent', border: 'none', padding: '8px 18px' }}
-          >
+        <div className="modal-footer">
+          <button className="btn btn-ghost" onClick={onClose}>
             {t('cancel', 'Cancel')}
           </button>
           <button
@@ -229,15 +209,6 @@ export default function AddMemberModal({ group, onClose, onSaved }) {
             className="btn btn-gold"
             onClick={handleSave}
             disabled={saving}
-            style={{
-              background: '#f59e0b',
-              color: '#000',
-              fontWeight: 700,
-              padding: '10px 24px',
-              borderRadius: 8,
-              border: 'none',
-              cursor: saving ? 'not-allowed' : 'pointer'
-            }}
           >
             {saving ? (
               <span className="flex items-center gap-2">
@@ -252,4 +223,3 @@ export default function AddMemberModal({ group, onClose, onSaved }) {
     </div>
   )
 }
-

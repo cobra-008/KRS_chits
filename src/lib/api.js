@@ -545,8 +545,24 @@ export const chitDrawsApi = {
       .insert(payload)
       .select()
       .single()
-    if (error) throw error
-    return data
+
+    if (!error) return data
+
+    // Handle missing column error (PGRST204)
+    if (error.code === 'PGRST204' || error.message?.includes('delivery_status') || error.message?.includes('withdrawer_share_pct')) {
+      const cleanPayload = { ...payload }
+      delete cleanPayload.delivery_status
+      delete cleanPayload.withdrawer_share_pct
+      const { data: d2, error: e2 } = await supabase
+        .from('chit_draws')
+        .insert(cleanPayload)
+        .select()
+        .single()
+      if (e2) throw e2
+      return { ...d2, delivery_status: payload.delivery_status, withdrawer_share_pct: payload.withdrawer_share_pct }
+    }
+
+    throw error
   },
 
   async update(id, payload) {

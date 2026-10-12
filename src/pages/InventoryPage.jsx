@@ -98,30 +98,23 @@ export default function InventoryPage({ onNavigate }) {
     try {
       const w = parseFloat(addForm.weight_g) || 0
       const tunch = parseFloat(addForm.tunch_pct) || 0
-      const { pure } = calcFine(w, tunch)
+      const calc = calcFine(w, tunch)
 
-      let custName = 'Direct'
-      if (addForm.customer_id) {
-        const found = customers.find(c => c.id === addForm.customer_id)
-        if (found) custName = found.name
-      } else if (addForm.custom_customer && addForm.custom_customer.trim()) {
-        custName = addForm.custom_customer.trim()
-      }
+      const selectedCust = customers.find(c => c.id === addForm.customer_id)
+      const sourceName = selectedCust ? selectedCust.name : (addForm.custom_customer || 'Direct')
 
-      const generatedPatlaNo = addForm.patla_no.trim() || `${addForm.silver_type}-${Math.floor(100 + Math.random() * 900)}`
-
-      await inventoryApi.addManual({
-        patla_no: generatedPatlaNo,
+      await inventoryApi.addDirect({
+        silver_type: addForm.silver_type,
+        patla_no: addForm.patla_no || `${addForm.silver_type}-${Date.now().toString().slice(-4)}`,
         weight_g: w,
         tunch_pct: tunch,
-        pure_g: pure,
-        silver_type: addForm.silver_type,
-        source_name: custName,
-        customer_name: custName,
-        description: `Direct Entry - ${addForm.silver_type === 'B' ? 'Bar' : addForm.silver_type === 'P' ? 'Patla' : 'Kacha'}`,
+        pure_g: calc.pure,
+        customer_id: addForm.customer_id || null,
+        source_name: sourceName,
+        date: addForm.date,
       })
 
-      toast.success(lang === 'ta' ? 'வெள்ளி வெற்றிகரமாக சேர்க்கப்பட்டது!' : 'Silver added to inventory!')
+      toast.success(lang === 'ta' ? 'வெள்ளி வெற்றிகரமாக சேர்க்கப்பட்டது!' : 'Silver added to vault inventory!')
       setShowAddModal(false)
       setAddForm({
         silver_type: 'K',
@@ -135,19 +128,21 @@ export default function InventoryPage({ onNavigate }) {
       load()
     } catch (err) {
       console.error(err)
-      toast.error(err.message || 'Failed to add silver to vault')
+      toast.error(err.message || 'Failed to add silver to inventory')
     } finally {
       setSavingAdd(false)
     }
   }
 
-  // Handle Delete Item
+  // Handle Delete Inventory Lot
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this silver bar from vault inventory?')) return
+    if (!window.confirm(lang === 'ta' ? 'இந்த உருப்படியை நிச்சயமாக நீக்க வேண்டுமா?' : 'Are you sure you want to delete this inventory item?')) {
+      return
+    }
+    setDeletingId(id)
     try {
-      setDeletingId(id)
-      await inventoryApi.delete(id)
-      toast.success('Silver item deleted from inventory')
+      await inventoryApi.deleteItem(id)
+      toast.success(lang === 'ta' ? 'உருப்படி நீக்கப்பட்டது' : 'Item removed from inventory')
       load()
     } catch (err) {
       toast.error('Failed to delete item')
@@ -156,65 +151,51 @@ export default function InventoryPage({ onNavigate }) {
     }
   }
 
+  // Handle Transfer Selected to Issue Voucher
+  const handleTransferToIssue = () => {
+    if (selected.size === 0) {
+      toast.error('Select at least one kacha bar first')
+      return
+    }
+    const selectedLots = items.filter(i => selected.has(i.id))
+    sessionStorage.setItem('krs_selected_issue_lots', JSON.stringify(selectedLots))
+    toast.success(`${selectedLots.length} bars transferred to Issue Voucher`)
+    if (onNavigate) {
+      onNavigate('issue')
+    }
+  }
+
+  const typeOptions = [
+    { type: 'K', label: 'Kacha (K)' },
+    { type: 'P', label: 'Patla (P)' },
+    { type: 'B', label: 'Bar (B)' },
+  ]
+
   return (
-    <div className="page" style={{ padding: '24px 32px' }}>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6" style={{ flexWrap: 'wrap', gap: 16 }}>
+    <div className="page">
+      {/* Page Header */}
+      <div className="page-header">
         <div>
-          <h1 className="page-title" style={{ fontSize: '1.4rem', fontWeight: 800, color: '#f9fafb', letterSpacing: '-0.02em', margin: 0 }}>
-            Physical Vault Stock & Bullion Inventory
-          </h1>
-          <p className="page-sub" style={{ fontSize: '0.85rem', color: '#9ca3af', marginTop: 4 }}>
-            Individual Kachas, Patlas, and Bars verified in safe inventory
+          <h1 className="page-title">{t('vault_stock', 'Vault Stock & Inventory')}</h1>
+          <p className="page-sub">
+            {inStockCount} {t('kachas_in_stock', 'kachas & bars in stock')} • {gramsToKg(totalPureSilver)} KG {t('pure_silver', 'pure silver available')}
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex gap-2">
           <button
-            id="btn-transfer-issue"
-            className="btn btn-sm"
-            onClick={() => {
-              if (selected.size === 0) {
-                toast.error('Select at least one lot to transfer')
-                return
-              }
-              toast.success(`${selected.size} lot(s) transferred to Issue Voucher`)
-              onNavigate('issue', Array.from(selected))
-            }}
-            style={{
-              background: '#4f46e5',
-              color: '#fff',
-              border: 'none',
-              padding: '9px 18px',
-              borderRadius: 8,
-              fontWeight: 700,
-              fontSize: '0.85rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              cursor: 'pointer'
-            }}
+            id="btn-transfer-issue-voucher"
+            className="btn btn-secondary"
+            onClick={handleTransferToIssue}
+            disabled={selected.size === 0}
           >
             <Send size={15} /> Transfer Selected to Issue Voucher
           </button>
 
           <button
             id="btn-add-kacha-bar"
-            className="btn btn-gold btn-sm"
+            className="btn btn-gold"
             onClick={() => setShowAddModal(true)}
-            style={{
-              background: '#f59e0b',
-              color: '#000',
-              border: 'none',
-              padding: '9px 18px',
-              borderRadius: 8,
-              fontWeight: 800,
-              fontSize: '0.85rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              cursor: 'pointer'
-            }}
           >
             <Plus size={16} /> + Add Kacha Bar
           </button>
@@ -222,65 +203,45 @@ export default function InventoryPage({ onNavigate }) {
       </div>
 
       {/* Top 4 Stat Cards */}
-      <div className="grid grid-cols-4 gap-4 mb-6" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+      <div className="stats-grid mb-6">
         {/* Card 1: In-Stock Kachas */}
-        <div style={{
-          background: '#0a0f1d',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-          borderRadius: 12,
-          padding: '18px 20px',
-        }}>
-          <div style={{ fontSize: '0.78rem', color: '#9ca3af', fontWeight: 600 }}>In-Stock Kachas</div>
-          <div className="font-mono" style={{ fontSize: '1.9rem', fontWeight: 900, color: '#f59e0b', marginTop: 4 }}>
+        <div className="stat-card">
+          <div className="stat-label">In-Stock Kachas</div>
+          <div className="stat-value font-mono text-gold">
             {inStockCount}
           </div>
-          <div style={{ fontSize: '0.78rem', color: '#6b7280', marginTop: 2 }}>Available Bars</div>
+          <div className="stat-sub">Available Bars</div>
         </div>
 
         {/* Card 2: Total Gross Weight */}
-        <div style={{
-          background: '#0a0f1d',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-          borderRadius: 12,
-          padding: '18px 20px',
-        }}>
-          <div style={{ fontSize: '0.78rem', color: '#9ca3af', fontWeight: 600 }}>Total Gross Weight</div>
-          <div className="font-mono" style={{ fontSize: '1.9rem', fontWeight: 900, color: '#f9fafb', marginTop: 4 }}>
+        <div className="stat-card">
+          <div className="stat-label">Total Gross Weight</div>
+          <div className="stat-value font-mono">
             {totalGrossWeight.toLocaleString('en-IN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} g
           </div>
-          <div className="font-mono" style={{ fontSize: '0.78rem', color: '#6b7280', marginTop: 2 }}>
-            {gramsToKg(totalGrossWeight)} KG
+          <div className="stat-sub font-mono">
+            {gramsToKg(totalGrossWeight)} KG Gross
           </div>
         </div>
 
         {/* Card 3: Total Pure Silver (999.0) */}
-        <div style={{
-          background: '#0a0f1d',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-          borderRadius: 12,
-          padding: '18px 20px',
-        }}>
-          <div style={{ fontSize: '0.78rem', color: '#9ca3af', fontWeight: 600 }}>Total Pure Silver (999.0)</div>
-          <div className="font-mono" style={{ fontSize: '1.9rem', fontWeight: 900, color: '#10b981', marginTop: 4 }}>
+        <div className="stat-card">
+          <div className="stat-label">Total Pure Silver (999.0)</div>
+          <div className="stat-value font-mono text-success">
             {totalPureSilver.toLocaleString('en-IN')} g
           </div>
-          <div className="font-mono" style={{ fontSize: '0.78rem', color: '#059669', marginTop: 2 }}>
-            {gramsToKg(totalPureSilver)} KG
+          <div className="stat-sub font-mono">
+            {gramsToKg(totalPureSilver)} KG Fine
           </div>
         </div>
 
         {/* Card 4: Selected Lots Calc */}
-        <div style={{
-          background: '#0a0f1d',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-          borderRadius: 12,
-          padding: '18px 20px',
-        }}>
-          <div style={{ fontSize: '0.78rem', color: '#9ca3af', fontWeight: 600 }}>Selected Lots Calc</div>
-          <div className="font-mono" style={{ fontSize: '1.9rem', fontWeight: 900, color: '#38bdf8', marginTop: 4 }}>
+        <div className="stat-card" style={{ borderLeft: '4px solid var(--clr-gold)' }}>
+          <div className="stat-label">Selected Lots Calc</div>
+          <div className="stat-value font-mono text-gold">
             {selPureSilver.toLocaleString('en-IN')} g
           </div>
-          <div className="font-mono" style={{ fontSize: '0.78rem', color: '#0284c7', marginTop: 2 }}>
+          <div className="stat-sub">
             {selected.size} items • {gramsToKg(selGrossWeight)} KG Gross
           </div>
         </div>
@@ -288,9 +249,9 @@ export default function InventoryPage({ onNavigate }) {
 
       {/* Main Table */}
       {loading ? (
-        <div className="loading-overlay" style={{ padding: 40 }}><div className="spinner" /> Loading vault inventory…</div>
+        <div className="loading-overlay"><div className="spinner" /> Loading vault inventory…</div>
       ) : items.length === 0 ? (
-        <div className="empty-state" style={{ padding: 40 }}>
+        <div className="empty-state">
           <Package size={48} style={{ opacity: 0.3 }} />
           <div className="empty-state-title mt-3">Vault inventory is currently empty</div>
           <button className="btn btn-gold btn-sm mt-3" onClick={() => setShowAddModal(true)}>
@@ -298,217 +259,152 @@ export default function InventoryPage({ onNavigate }) {
           </button>
         </div>
       ) : (
-        <div className="table-wrap" style={{ background: '#070b13', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, overflowX: 'auto' }}>
-          <table style={{ minWidth: 840, width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', background: '#090e18' }}>
-                <th style={{ width: 44, padding: '14px 16px', textAlign: 'center' }}>
-                  <button
-                    className="btn btn-ghost btn-sm btn-icon"
-                    onClick={toggleAll}
-                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#9ca3af' }}
-                  >
-                    {selected.size === inStockCount && inStockCount > 0 ? (
-                      <CheckSquare size={16} style={{ color: '#f59e0b' }} />
-                    ) : (
-                      <Square size={16} />
-                    )}
-                  </button>
-                </th>
-                <th style={{ padding: '14px 16px', fontSize: '0.72rem', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                  DATE ADDED
-                </th>
-                <th style={{ padding: '14px 16px', fontSize: '0.72rem', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                  KACHA / PATLA NO.
-                </th>
-                <th style={{ padding: '14px 16px', fontSize: '0.72rem', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                  FROM CUSTOMER / SOURCE
-                </th>
-                <th style={{ padding: '14px 16px', fontSize: '0.72rem', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                  GROSS WT (G)
-                </th>
-                <th style={{ padding: '14px 16px', fontSize: '0.72rem', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                  TUNCH (%)
-                </th>
-                <th style={{ padding: '14px 16px', fontSize: '0.72rem', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                  PURE SILVER (G)
-                </th>
-                <th style={{ padding: '14px 16px', fontSize: '0.72rem', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                  STATUS
-                </th>
-                <th style={{ padding: '14px 16px', fontSize: '0.72rem', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'center' }}>
-                  ACTION
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map(item => {
-                const isChecked = selected.has(item.id)
-                const dateDisplay = item.added_at ? format(parseISO(item.added_at), 'yyyy-MM-dd') : '2026-10-11'
-                const silverType = item.silver_type || 'K'
-                const typeLabel = silverType === 'B' ? 'Bar' : silverType === 'P' ? 'Patla' : 'Kacha'
+        <>
+          <div className="table-scroll-hint mb-2">{t('swipe_hint')}</div>
+          <div className="table-wrap" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+            <table style={{ minWidth: 840 }}>
+              <thead>
+                <tr>
+                  <th style={{ width: 44, textAlign: 'center' }}>
+                    <button
+                      className="btn btn-ghost btn-sm btn-icon"
+                      onClick={toggleAll}
+                      style={{ padding: 0 }}
+                    >
+                      {selected.size === inStockCount && inStockCount > 0 ? (
+                        <CheckSquare size={16} className="text-gold" />
+                      ) : (
+                        <Square size={16} />
+                      )}
+                    </button>
+                  </th>
+                  <th>DATE ADDED</th>
+                  <th>KACHA / PATLA NO.</th>
+                  <th>FROM CUSTOMER / SOURCE</th>
+                  <th className="font-mono text-right">GROSS WT (G)</th>
+                  <th className="font-mono text-right">TUNCH (%)</th>
+                  <th className="font-mono text-right">PURE SILVER (G)</th>
+                  <th style={{ textAlign: 'center' }}>STATUS</th>
+                  <th style={{ textAlign: 'center' }}>ACTION</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map(item => {
+                  const isChecked = selected.has(item.id)
+                  const dateDisplay = item.added_at ? format(parseISO(item.added_at), 'yyyy-MM-dd') : '2026-10-11'
+                  const silverType = item.silver_type || 'K'
 
-                return (
-                  <tr
-                    key={item.id}
-                    style={{
-                      borderBottom: '1px solid rgba(255,255,255,0.04)',
-                      background: isChecked ? 'rgba(245, 158, 11, 0.08)' : 'transparent',
-                      transition: 'background 0.15s ease'
-                    }}
-                  >
-                    <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                      <button
-                        className="btn btn-ghost btn-sm btn-icon"
-                        onClick={() => toggleSelect(item.id)}
-                        style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#9ca3af' }}
-                      >
-                        {isChecked ? (
-                          <CheckSquare size={16} style={{ color: '#f59e0b' }} />
-                        ) : (
-                          <Square size={16} />
-                        )}
-                      </button>
-                    </td>
-
-                    <td className="font-mono text-sm" style={{ padding: '12px 16px', color: '#d1d5db' }}>
-                      {dateDisplay}
-                    </td>
-
-                    <td style={{ padding: '12px 16px' }}>
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="font-mono font-bold"
-                          style={{
-                            color: '#f59e0b',
-                            fontSize: '0.9rem',
-                            letterSpacing: '0.03em'
-                          }}
+                  return (
+                    <tr
+                      key={item.id}
+                      style={{
+                        background: isChecked ? 'var(--clr-gold-bg)' : undefined,
+                      }}
+                    >
+                      <td style={{ textAlign: 'center' }}>
+                        <button
+                          className="btn btn-ghost btn-sm btn-icon"
+                          onClick={() => toggleSelect(item.id)}
+                          style={{ padding: 0 }}
                         >
-                          {item.patla_no}
+                          {isChecked ? (
+                            <CheckSquare size={16} className="text-gold" />
+                          ) : (
+                            <Square size={16} />
+                          )}
+                        </button>
+                      </td>
+
+                      <td className="font-mono text-sm text-secondary">
+                        {dateDisplay}
+                      </td>
+
+                      <td>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-gold">
+                            {item.patla_no}
+                          </span>
+                          <span className="badge badge-silver font-mono" style={{ fontSize: '0.7rem' }}>
+                            {silverType}
+                          </span>
+                        </div>
+                      </td>
+
+                      <td className="font-semibold text-primary">
+                        {item.source_name || 'Direct'}
+                      </td>
+
+                      <td className="font-mono text-right">
+                        {parseFloat(item.weight_g).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} g
+                      </td>
+
+                      <td className="font-mono text-right">
+                        {parseFloat(item.tunch_pct).toFixed(2)}%
+                      </td>
+
+                      <td className="font-mono font-bold text-right text-success">
+                        {parseFloat(item.pure_g).toLocaleString('en-IN')} g
+                      </td>
+
+                      <td style={{ textAlign: 'center' }}>
+                        <span className="badge badge-green">
+                          IN_STOCK
                         </span>
-                        <span
-                          style={{
-                            fontSize: '0.68rem',
-                            fontWeight: 700,
-                            padding: '2px 6px',
-                            borderRadius: 4,
-                            background: silverType === 'B' ? '#1e3a8a' : silverType === 'P' ? '#3730a3' : '#312e81',
-                            color: '#93c5fd'
-                          }}
+                      </td>
+
+                      <td style={{ textAlign: 'center' }}>
+                        <button
+                          className="btn btn-ghost btn-sm btn-icon text-danger"
+                          onClick={() => handleDelete(item.id)}
+                          disabled={deletingId === item.id}
+                          title="Delete item"
                         >
-                          {silverType}
-                        </span>
-                      </div>
-                    </td>
-
-                    <td style={{ padding: '12px 16px', color: '#f3f4f6', fontWeight: 500, fontSize: '0.9rem' }}>
-                      {item.source_name || 'Direct'}
-                    </td>
-
-                    <td className="font-mono" style={{ padding: '12px 16px', color: '#e5e7eb', fontSize: '0.9rem' }}>
-                      {parseFloat(item.weight_g).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} g
-                    </td>
-
-                    <td className="font-mono" style={{ padding: '12px 16px', color: '#38bdf8', fontSize: '0.9rem' }}>
-                      {parseFloat(item.tunch_pct).toFixed(2)}%
-                    </td>
-
-                    <td className="font-mono font-bold" style={{ padding: '12px 16px', color: '#10b981', fontSize: '0.95rem' }}>
-                      {parseFloat(item.pure_g).toLocaleString('en-IN')} g
-                    </td>
-
-                    <td style={{ padding: '12px 16px' }}>
-                      <span
-                        style={{
-                          background: 'rgba(16, 185, 129, 0.15)',
-                          color: '#34d399',
-                          fontSize: '0.72rem',
-                          fontWeight: 800,
-                          padding: '3px 8px',
-                          borderRadius: 6,
-                          letterSpacing: '0.05em'
-                        }}
-                      >
-                        IN_STOCK
-                      </span>
-                    </td>
-
-                    <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                      <button
-                        className="btn btn-ghost btn-sm"
-                        onClick={() => handleDelete(item.id)}
-                        disabled={deletingId === item.id}
-                        style={{
-                          color: '#f43f5e',
-                          background: 'transparent',
-                          border: 'none',
-                          fontSize: '0.82rem',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          padding: '4px 8px'
-                        }}
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
+                          <Trash2 size={14} />
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
-      {/* Direct Add Silver Modal */}
+      {/* Add Direct Silver Modal */}
       {showAddModal && (
         <div className="modal-backdrop" role="dialog" aria-modal="true">
-          <div className="modal modal-md" style={{ maxWidth: 500, background: '#0e1420', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14 }}>
+          <div className="modal modal-md">
             {/* Modal Header */}
-            <div className="modal-header" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '16px 20px' }}>
+            <div className="modal-header">
               <div className="flex items-center gap-2">
-                <Plus size={20} style={{ color: '#f59e0b' }} />
-                <span className="modal-title" style={{ fontSize: '1.15rem', fontWeight: 800, color: '#f3f4f6' }}>
+                <Package size={20} className="text-gold" />
+                <span className="modal-title">
                   Add Silver to Vault Inventory
                 </span>
               </div>
-              <button className="btn btn-ghost btn-sm btn-icon" onClick={() => setShowAddModal(false)} style={{ color: '#9ca3af' }}>
+              <button className="btn btn-ghost btn-sm btn-icon" onClick={() => setShowAddModal(false)}>
                 <X size={18} />
               </button>
             </div>
 
             {/* Modal Body */}
-            <div className="modal-body" style={{ padding: '20px' }}>
+            <div className="modal-body">
               <div className="flex flex-col gap-4">
-                {/* Silver Type Capsule Pill (K / P / B) */}
+                {/* Silver Type Selector: K, P, B */}
                 <div className="form-group">
-                  <label className="form-label" style={{ fontSize: '0.82rem', color: '#9ca3af', marginBottom: 6 }}>
-                    Type of Silver (Katcha / Patla / Bar): <span style={{ color: '#ef4444' }}>*</span>
+                  <label className="form-label">
+                    Silver Type (Kacha / Patla / Bar):
                   </label>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    {[
-                      { key: 'K', label: 'K (Katcha)' },
-                      { key: 'P', label: 'P (Patla)' },
-                      { key: 'B', label: 'B (Bar - 100% Tunch)' },
-                    ].map(typeOpt => {
-                      const isActive = addForm.silver_type === typeOpt.key
+                  <div className="flex gap-2">
+                    {typeOptions.map(typeOpt => {
+                      const isActive = addForm.silver_type === typeOpt.type
                       return (
                         <button
-                          key={typeOpt.key}
+                          key={typeOpt.type}
                           type="button"
-                          onClick={() => handleTypeChange(typeOpt.key)}
-                          style={{
-                            flex: 1,
-                            padding: '10px 8px',
-                            borderRadius: 8,
-                            fontSize: '0.82rem',
-                            fontWeight: 800,
-                            cursor: 'pointer',
-                            transition: 'all 0.15s ease',
-                            background: isActive ? 'rgba(245, 158, 11, 0.2)' : '#070b13',
-                            color: isActive ? '#f59e0b' : '#9ca3af',
-                            border: isActive ? '1.5px solid #f59e0b' : '1px solid rgba(255,255,255,0.1)',
-                          }}
+                          className={`btn flex-1 font-mono font-bold ${isActive ? 'btn-gold' : 'btn-secondary'}`}
+                          onClick={() => handleTypeChange(typeOpt.type)}
                         >
                           {typeOpt.label}
                         </button>
@@ -519,68 +415,57 @@ export default function InventoryPage({ onNavigate }) {
 
                 {/* Number of the silver (Kacha / Patla No.) */}
                 <div className="form-group">
-                  <label className="form-label" style={{ fontSize: '0.82rem', color: '#9ca3af', marginBottom: 6 }}>
+                  <label className="form-label">
                     Number / Bar ID (Kacha / Patla No.):
                   </label>
                   <input
                     type="text"
-                    className="form-control font-mono"
+                    className="form-control font-mono font-bold"
                     value={addForm.patla_no}
                     onChange={e => setAddForm(p => ({ ...p, patla_no: e.target.value }))}
                     placeholder={`e.g. ${addForm.silver_type}-101`}
-                    style={{ background: '#090d16', borderColor: '#222f46', color: '#f59e0b', fontWeight: 700, height: 42, borderRadius: 8 }}
                   />
                 </div>
 
                 {/* Weight (Gross Wt g) and Tunch (%) */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="grid grid-cols-2 gap-3" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '0.82rem', color: '#9ca3af', marginBottom: 6 }}>
-                      Gross Weight (g): <span style={{ color: '#ef4444' }}>*</span>
+                    <label className="form-label">
+                      Gross Weight (g): <span className="text-danger">*</span>
                     </label>
                     <input
                       type="number"
                       step="any"
                       min="0"
-                      className="form-control font-mono"
+                      className="form-control font-mono font-bold"
                       value={addForm.weight_g}
                       onChange={e => setAddForm(p => ({ ...p, weight_g: e.target.value }))}
                       placeholder="1000.00"
-                      style={{ background: '#090d16', borderColor: '#222f46', color: '#f9fafb', height: 42, borderRadius: 8, fontWeight: 700 }}
                     />
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '0.82rem', color: '#9ca3af', marginBottom: 6 }}>
-                      Tunch (%): <span style={{ color: '#ef4444' }}>*</span>
+                    <label className="form-label">
+                      Tunch (%): <span className="text-danger">*</span>
                     </label>
                     <input
                       type="number"
                       step="any"
                       min="0"
                       max="100"
-                      className="form-control font-mono"
+                      className="form-control font-mono font-bold"
                       value={addForm.tunch_pct}
                       onChange={e => setAddForm(p => ({ ...p, tunch_pct: e.target.value }))}
                       placeholder={addForm.silver_type === 'B' ? '100.00' : '99.90'}
-                      style={{ background: '#090d16', borderColor: '#222f46', color: '#38bdf8', height: 42, borderRadius: 8, fontWeight: 700 }}
                     />
                   </div>
                 </div>
 
                 {/* Calculated Pure Silver Preview */}
                 {parseFloat(addForm.weight_g) > 0 && parseFloat(addForm.tunch_pct) > 0 && (
-                  <div style={{
-                    background: '#070b13',
-                    border: '1px solid rgba(16, 185, 129, 0.3)',
-                    borderRadius: 8,
-                    padding: '10px 14px',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                  }}>
-                    <span style={{ fontSize: '0.82rem', color: '#9ca3af' }}>Calculated Pure Silver (999.0):</span>
-                    <span className="font-mono" style={{ fontSize: '1.1rem', fontWeight: 800, color: '#10b981' }}>
+                  <div className="card card-gold" style={{ padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span className="text-xs text-secondary font-semibold">Calculated Pure Silver (999.0):</span>
+                    <span className="font-mono text-success font-bold" style={{ fontSize: '1.1rem' }}>
                       {calcFine(parseFloat(addForm.weight_g) || 0, parseFloat(addForm.tunch_pct) || 0).pure.toLocaleString('en-IN')} g
                     </span>
                   </div>
@@ -588,11 +473,11 @@ export default function InventoryPage({ onNavigate }) {
 
                 {/* Customer (Optional, Default 'Direct') */}
                 <div className="form-group">
-                  <label className="form-label" style={{ fontSize: '0.82rem', color: '#9ca3af', marginBottom: 6 }}>
+                  <label className="form-label">
                     Customer / Source (Optional, default 'Direct'):
                   </label>
                   <select
-                    className="form-control mb-2"
+                    className="form-control"
                     value={addForm.customer_id}
                     onChange={e => {
                       const val = e.target.value
@@ -602,7 +487,6 @@ export default function InventoryPage({ onNavigate }) {
                         custom_customer: val ? '' : 'Direct'
                       }))
                     }}
-                    style={{ background: '#090d16', borderColor: '#222f46', color: '#f9fafb', height: 42, borderRadius: 8 }}
                   >
                     <option value="">Direct Entry (No Customer)</option>
                     {customers.map(c => (
@@ -614,11 +498,10 @@ export default function InventoryPage({ onNavigate }) {
             </div>
 
             {/* Modal Footer */}
-            <div className="modal-footer" style={{ borderTop: '1px solid rgba(255,255,255,0.08)', padding: '14px 20px', display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+            <div className="modal-footer">
               <button
                 className="btn btn-ghost"
                 onClick={() => setShowAddModal(false)}
-                style={{ color: '#9ca3af', background: 'transparent', border: 'none', padding: '8px 18px' }}
               >
                 Cancel
               </button>
@@ -627,15 +510,6 @@ export default function InventoryPage({ onNavigate }) {
                 className="btn btn-gold"
                 onClick={handleSaveAdd}
                 disabled={savingAdd}
-                style={{
-                  background: '#f59e0b',
-                  color: '#000',
-                  fontWeight: 800,
-                  padding: '10px 22px',
-                  borderRadius: 8,
-                  border: 'none',
-                  cursor: savingAdd ? 'not-allowed' : 'pointer'
-                }}
               >
                 {savingAdd ? 'Saving…' : 'Add to Inventory'}
               </button>
@@ -646,4 +520,3 @@ export default function InventoryPage({ onNavigate }) {
     </div>
   )
 }
-

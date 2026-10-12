@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS group_members (
   group_id        UUID REFERENCES groups(id) ON DELETE CASCADE,
   customer_id     UUID REFERENCES customers(id) ON DELETE CASCADE,
   ticket_no       INTEGER,                  -- seat number in scheme
+  share_pct       NUMERIC(6,2) DEFAULT 100, -- 50%, 100%, 150%, 200%
   joining_month   INTEGER DEFAULT 1,        -- month they joined (for late joiners)
   joining_date    DATE DEFAULT CURRENT_DATE,
   fine_deposited  NUMERIC(12,3) DEFAULT 0,  -- total fine silver paid (g)
@@ -79,6 +80,7 @@ CREATE TABLE IF NOT EXISTS voucher_lots (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   voucher_id  UUID REFERENCES vouchers(id) ON DELETE CASCADE,
   lot_no      INTEGER NOT NULL,
+  silver_type TEXT DEFAULT 'K',         -- 'K' = Katcha, 'P' = Patla, 'B' = Bar
   patla_no    TEXT,                     -- physical bar/kacha identifier
   weight_g    NUMERIC(12,3) NOT NULL,
   tunch_pct   NUMERIC(6,3) NOT NULL,    -- purity %
@@ -92,6 +94,8 @@ CREATE TABLE IF NOT EXISTS voucher_lots (
 CREATE TABLE IF NOT EXISTS inventory (
   id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   patla_no          TEXT NOT NULL,
+  silver_type       TEXT DEFAULT 'K',   -- 'K', 'P', 'B'
+  source_name       TEXT DEFAULT 'Direct',
   description       TEXT,
   weight_g          NUMERIC(12,3) NOT NULL,
   tunch_pct         NUMERIC(6,3) NOT NULL,
@@ -121,6 +125,8 @@ CREATE TABLE IF NOT EXISTS chit_draws (
   monthly_premium_g     NUMERIC(12,3) DEFAULT 0,   -- unit_limit - dividend
   old_dues_g            NUMERIC(12,3) DEFAULT 0,   -- previous balance deducted
   net_silver_to_issue_g NUMERIC(12,3) DEFAULT 0,   -- amount to give withdrawer
+  delivery_status       TEXT DEFAULT 'hold_excess', -- 'hold_excess' or 'physical'
+  withdrawer_share_pct  NUMERIC(6,2) DEFAULT 100,
 
   issue_voucher_id      UUID REFERENCES vouchers(id),
   created_at            TIMESTAMPTZ DEFAULT NOW()
@@ -132,8 +138,8 @@ CREATE TABLE IF NOT EXISTS chit_draws (
 CREATE TABLE IF NOT EXISTS transaction_log (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   log_date      DATE NOT NULL DEFAULT CURRENT_DATE,
-  type          TEXT CHECK(type IN ('receipt','issue','chit_settlement')) NOT NULL,
-  ref_id        UUID,                    -- voucher_id or chit_draw_id
+  type          TEXT NOT NULL,          -- 'receipt', 'issue', 'chit_settlement', 'chit_demand'
+  ref_id        UUID,                   -- voucher_id or chit_draw_id
   ref_type      TEXT,                   -- 'voucher' or 'chit_draw'
   customer_id   UUID REFERENCES customers(id),
   customer_name TEXT,
