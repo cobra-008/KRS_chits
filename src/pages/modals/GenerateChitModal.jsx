@@ -313,8 +313,8 @@ export default function GenerateChitModal({ group, members: initialMembers, onCl
           )}
 
           {/* Row 2: Withdrawing Member & Accepted Auction Discount */}
-          <div className="form-row mb-5">
-            <div className="form-group flex-1">
+          <div className="form-row mb-5" style={{ display: 'flex', flexWrap: 'wrap', gap: 14 }}>
+            <div className="form-group" style={{ flex: '1 1 260px' }}>
               <label className="form-label">
                 {t('withdrawing_member', 'Withdrawing Member:')} <span className="text-danger">*</span>
               </label>
@@ -336,7 +336,7 @@ export default function GenerateChitModal({ group, members: initialMembers, onCl
               </div>
             </div>
 
-            <div className="form-group" style={{ width: 280 }}>
+            <div className="form-group" style={{ flex: '1 1 240px' }}>
               <label className="form-label font-bold">
                 {t('accepted_auction_discount', 'Accepted Auction Discount (g):')} <span className="text-danger">*</span>
               </label>
@@ -358,13 +358,13 @@ export default function GenerateChitModal({ group, members: initialMembers, onCl
           </div>
 
           {/* SETTLEMENT FORMULA & AUDIT BREAKDOWN */}
-          <div className="card card-gold mb-5" style={{ padding: '18px 20px' }}>
+          <div className="card card-gold mb-5" style={{ padding: '16px 18px' }}>
             <div className="text-xs font-bold text-gold uppercase tracking-wider mb-4">
               {t('settlement_formula_breakdown', 'SETTLEMENT FORMULA & AUDIT BREAKDOWN:')}
             </div>
 
-            {/* Top row of formula: 4 metrics */}
-            <div className="grid grid-cols-4 gap-4 mb-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
+            {/* Top row of formula: 4 metrics (2x2 on mobile, 4-col on desktop) */}
+            <div className="chit-formula-top-grid mb-4">
               <div className="stat-card" style={{ padding: '12px 14px' }}>
                 <div className="stat-label">GROSS CAPACITY</div>
                 <div className="stat-value font-mono" style={{ fontSize: '1.25rem' }}>
@@ -394,8 +394,8 @@ export default function GenerateChitModal({ group, members: initialMembers, onCl
               </div>
             </div>
 
-            {/* Bottom row of formula: Premium, Old Dues & Prominent Net Disburse Card */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1.3fr', gap: '14px', alignItems: 'center' }}>
+            {/* Bottom row of formula: Premium, Old Dues & Prominent Net Disburse Card (stacked on mobile) */}
+            <div className="chit-formula-bottom-grid">
               <div className="stat-card" style={{ padding: '12px 14px' }}>
                 <div className="stat-label">MONTHLY PREMIUM (DEMANDED)</div>
                 <div className="stat-value font-mono" style={{ fontSize: '1.2rem' }}>

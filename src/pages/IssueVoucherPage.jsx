@@ -433,15 +433,14 @@ export default function IssueVoucherPage({ initialSelectedIds = [] }) {
           ) : (
             <>
               <div className="table-wrap mb-2" style={{ maxHeight: 420, overflow: 'auto', WebkitOverflowScrolling: 'touch' }}>
-                <table style={{ minWidth: 460 }}>
+                <table style={{ width: '100%' }}>
                   <thead>
                     <tr>
-                      <th style={{ width: 36, minWidth: 36, textAlign: 'center' }}></th>
-                      <th style={{ width: 55, minWidth: 55 }}>Type</th>
-                      <th style={{ minWidth: 120 }}>{t('th_patla_kacha_no', 'Patla / Kacha No')}</th>
-                      <th style={{ minWidth: 95 }}>{t('th_weight_g', 'Gross (g)')}</th>
-                      <th style={{ minWidth: 85 }}>{t('th_tunch_pct', 'Tunch (%)')}</th>
-                      <th style={{ minWidth: 85, color: 'var(--clr-gold)' }}>{t('th_pure_g', 'Pure (g)')}</th>
+                      <th style={{ width: 32, textAlign: 'center' }}></th>
+                      <th>{t('th_patla_kacha_no', 'Patla / Kacha No')}</th>
+                      <th>{t('th_weight_g', 'Gross (g)')}</th>
+                      <th>{t('th_tunch_pct', 'Tunch (%)')}</th>
+                      <th style={{ color: 'var(--clr-gold)' }}>{t('th_pure_g', 'Pure (g)')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -457,7 +456,7 @@ export default function IssueVoucherPage({ initialSelectedIds = [] }) {
                           }}
                           onClick={() => toggleVaultItem(item.id)}
                         >
-                          <td style={{ textAlign: 'center' }}>
+                          <td style={{ textAlign: 'center', width: 32 }}>
                             {isSelected ? (
                               <CheckSquare size={16} color="var(--clr-gold)" />
                             ) : (
@@ -465,30 +464,31 @@ export default function IssueVoucherPage({ initialSelectedIds = [] }) {
                             )}
                           </td>
                           <td>
-                            <span style={{
-                              fontSize: '0.72rem',
-                              fontWeight: 800,
-                              fontFamily: 'monospace',
-                              padding: '2px 6px',
-                              borderRadius: 4,
-                              background: sType === 'B' ? '#1e3a8a' : sType === 'P' ? '#3730a3' : '#312e81',
-                              color: '#93c5fd'
-                            }}>
-                              {sType}
-                            </span>
-                          </td>
-                          <td>
-                            <strong style={{ color: isSelected ? 'var(--clr-gold)' : 'var(--clr-text-primary)' }}>
-                              {item.patla_no}
-                            </strong>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{
+                                fontSize: '0.68rem',
+                                fontWeight: 800,
+                                fontFamily: 'monospace',
+                                padding: '1px 5px',
+                                borderRadius: 4,
+                                background: sType === 'B' ? '#1e3a8a' : sType === 'P' ? '#3730a3' : '#312e81',
+                                color: '#93c5fd',
+                                flexShrink: 0
+                              }}>
+                                {sType}
+                              </span>
+                              <strong style={{ color: isSelected ? 'var(--clr-gold)' : 'var(--clr-text-primary)' }}>
+                                {item.patla_no}
+                              </strong>
+                            </div>
                             {item.description && (
-                              <div className="text-xs text-muted">{item.description}</div>
+                              <div className="text-xs text-muted" style={{ marginTop: 2 }}>{item.description}</div>
                             )}
                           </td>
                           <td className="font-mono">
                             {parseFloat(item.weight_g).toLocaleString('en-IN', { maximumFractionDigits: 3 })} g
                           </td>
-                          <td className="font-mono">{parseFloat(item.tunch_pct).toFixed(3)}%</td>
+                          <td className="font-mono">{parseFloat(item.tunch_pct).toFixed(2)}%</td>
                           <td className="font-mono font-semibold" style={{ color: 'var(--clr-gold)' }}>
                             {parseFloat(item.pure_g).toLocaleString('en-IN')} g
                           </td>
@@ -535,152 +535,156 @@ export default function IssueVoucherPage({ initialSelectedIds = [] }) {
           ) : (
             <>
               <div className="table-wrap mb-2" style={{ overflow: 'auto', WebkitOverflowScrolling: 'touch' }}>
-                <table style={{ minWidth: 540 }}>
+                <table style={{ width: '100%' }}>
                   <thead>
                     <tr>
-                      <th style={{ width: 32, minWidth: 32 }}>#</th>
-                      <th style={{ width: 55, minWidth: 55 }}>Type</th>
-                      <th style={{ minWidth: 120 }}>{t('th_patla_kacha_no', 'Patla / Kacha No')}</th>
-                      <th style={{ minWidth: 95 }}>{t('th_weight_g', 'Weight (g)')}</th>
-                      <th style={{ minWidth: 85 }}>{t('th_tunch_pct', 'Tunch (%)')}</th>
-                      <th style={{ minWidth: 85, color: 'var(--clr-gold)' }}>{t('th_pure_g', 'Pure (g)')}</th>
-                      <th style={{ width: 36, minWidth: 36 }}></th>
+                      <th style={{ width: 26, textAlign: 'center' }}>#</th>
+                      <th>{t('th_patla_kacha_no', 'Patla / Kacha No')}</th>
+                      <th>{t('th_weight_g', 'Weight (g)')}</th>
+                      <th>{t('th_tunch_pct', 'Tunch (%)')}</th>
+                      <th style={{ color: 'var(--clr-gold)' }}>{t('th_pure_g', 'Pure (g)')}</th>
+                      <th style={{ width: 32 }}></th>
                     </tr>
                   </thead>
                   <tbody>
                     {/* Selected Vault Items */}
                     {chosenVaultItems.map((item, idx) => (
                       <tr key={item.id}>
-                        <td className="text-muted text-sm">{idx + 1}</td>
+                        <td className="text-muted text-sm" style={{ textAlign: 'center' }}>{idx + 1}</td>
                         <td>
-                          <span style={{
-                            fontSize: '0.72rem',
-                            fontWeight: 800,
-                            fontFamily: 'monospace',
-                            padding: '2px 6px',
-                            borderRadius: 4,
-                            background: (item.silver_type || 'K') === 'B' ? '#1e3a8a' : (item.silver_type || 'K') === 'P' ? '#3730a3' : '#312e81',
-                            color: '#93c5fd'
-                          }}>
-                            {item.silver_type || 'K'}
-                          </span>
-                        </td>
-                        <td>
-                          <strong>{item.patla_no}</strong>
-                          <span className="badge badge-gray" style={{ marginLeft: 6, fontSize: '0.65rem' }}>{t('in_vault', 'Vault')}</span>
-                        </td>
-                      <td className="font-mono">
-                        {parseFloat(item.weight_g).toLocaleString('en-IN', { maximumFractionDigits: 3 })}
-                      </td>
-                      <td className="font-mono">{parseFloat(item.tunch_pct).toFixed(3)}%</td>
-                      <td className="font-mono font-semibold" style={{ color: 'var(--clr-gold)' }}>
-                        {parseFloat(item.pure_g).toLocaleString('en-IN')}
-                      </td>
-                      <td>
-                        <button
-                          className="btn btn-maroon btn-sm btn-icon"
-                          title="Remove from issue voucher (returns to vault stock)"
-                          onClick={() => toggleVaultItem(item.id)}
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-
-                  {/* Custom Manual Lots */}
-                  {customLots.map((lot, idx) => {
-                    const cType = lot.silver_type || 'K'
-                    return (
-                      <tr key={lot._key}>
-                        <td className="text-muted text-sm">{chosenVaultItems.length + idx + 1}</td>
-                        <td>
-                          <div style={{
-                            display: 'inline-flex',
-                            background: '#090e1a',
-                            border: '1px solid rgba(255,255,255,0.12)',
-                            borderRadius: 14,
-                            padding: 1
-                          }}>
-                            {['K', 'P', 'B'].map(k => (
-                              <button
-                                key={k}
-                                type="button"
-                                onClick={() => updateCustomLot(lot._key, 'silver_type', k)}
-                                style={{
-                                  border: 'none',
-                                  borderRadius: 12,
-                                  padding: '2px 6px',
-                                  fontSize: '0.68rem',
-                                  fontWeight: 800,
-                                  cursor: 'pointer',
-                                  background: cType === k ? '#f59e0b' : 'transparent',
-                                  color: cType === k ? '#000' : '#9ca3af',
-                                }}
-                              >
-                                {k}
-                              </button>
-                            ))}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                            <span style={{
+                              fontSize: '0.68rem',
+                              fontWeight: 800,
+                              fontFamily: 'monospace',
+                              padding: '1px 5px',
+                              borderRadius: 4,
+                              background: (item.silver_type || 'K') === 'B' ? '#1e3a8a' : (item.silver_type || 'K') === 'P' ? '#3730a3' : '#312e81',
+                              color: '#93c5fd',
+                              flexShrink: 0
+                            }}>
+                              {item.silver_type || 'K'}
+                            </span>
+                            <strong>{item.patla_no}</strong>
+                            <span className="badge badge-gray" style={{ fontSize: '0.65rem' }}>{t('in_vault', 'Vault')}</span>
                           </div>
                         </td>
-                        <td>
-                          <input
-                            className="table-input"
-                            placeholder="Patla No."
-                            value={lot.patla_no}
-                            onChange={e => updateCustomLot(lot._key, 'patla_no', e.target.value)}
-                          />
+                        <td className="font-mono">
+                          {parseFloat(item.weight_g).toLocaleString('en-IN', { maximumFractionDigits: 3 })} g
                         </td>
-                        <td>
-                          <input
-                            type="number"
-                            step="any"
-                            className="table-input"
-                            placeholder="0.000"
-                            value={lot.weight_g}
-                            onChange={e => updateCustomLot(lot._key, 'weight_g', e.target.value)}
-                          />
-                        </td>
-                        <td>
-                          <input
-                            type="number"
-                            step="any"
-                            className="table-input"
-                            placeholder="0.000"
-                            value={lot.tunch_pct}
-                            onChange={e => updateCustomLot(lot._key, 'tunch_pct', e.target.value)}
-                          />
-                        </td>
+                        <td className="font-mono">{parseFloat(item.tunch_pct).toFixed(2)}%</td>
                         <td className="font-mono font-semibold" style={{ color: 'var(--clr-gold)' }}>
-                          {lot.pure_g ? `${lot.pure_g} g` : '—'}
+                          {parseFloat(item.pure_g).toLocaleString('en-IN')} g
                         </td>
                         <td>
                           <button
                             className="btn btn-maroon btn-sm btn-icon"
-                            onClick={() => removeCustomLot(lot._key)}
+                            title="Remove from issue voucher (returns to vault stock)"
+                            onClick={() => toggleVaultItem(item.id)}
                           >
                             <Trash2 size={12} />
                           </button>
                         </td>
                       </tr>
-                    )
-                  })}
-                </tbody>
-                <tfoot>
-                  <tr>
-                    <td colSpan={3}>{t('total_outward', 'Total Outward')}</td>
-                    <td className="font-mono">
-                      {totalWeight.toLocaleString('en-IN', { maximumFractionDigits: 3 })} g
-                    </td>
-                    <td className="font-mono">{avgTunch.toFixed(3)}%</td>
-                    <td className="font-mono" style={{ color: 'var(--clr-gold)', fontSize: '1.05rem' }}>
-                      <strong>{totalPure.toLocaleString('en-IN')} g</strong>
-                    </td>
-                    <td></td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
+                    ))}
+
+                    {/* Custom Manual Lots */}
+                    {customLots.map((lot, idx) => {
+                      const cType = lot.silver_type || 'K'
+                      return (
+                        <tr key={lot._key}>
+                          <td className="text-muted text-sm" style={{ textAlign: 'center' }}>{chosenVaultItems.length + idx + 1}</td>
+                          <td>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+                              <div style={{
+                                display: 'inline-flex',
+                                background: '#090e1a',
+                                border: '1px solid rgba(255,255,255,0.12)',
+                                borderRadius: 14,
+                                padding: 1,
+                                flexShrink: 0
+                              }}>
+                                {['K', 'P', 'B'].map(k => (
+                                  <button
+                                    key={k}
+                                    type="button"
+                                    onClick={() => updateCustomLot(lot._key, 'silver_type', k)}
+                                    style={{
+                                      border: 'none',
+                                      borderRadius: 12,
+                                      padding: '1px 5px',
+                                      fontSize: '0.66rem',
+                                      fontWeight: 800,
+                                      cursor: 'pointer',
+                                      background: cType === k ? '#f59e0b' : 'transparent',
+                                      color: cType === k ? '#000' : '#9ca3af',
+                                    }}
+                                  >
+                                    {k}
+                                  </button>
+                                ))}
+                              </div>
+                              <input
+                                className="table-input"
+                                style={{ minWidth: 60, padding: '4px 6px', flex: 1 }}
+                                placeholder="Patla No."
+                                value={lot.patla_no}
+                                onChange={e => updateCustomLot(lot._key, 'patla_no', e.target.value)}
+                              />
+                            </div>
+                          </td>
+                          <td>
+                            <input
+                              type="number"
+                              step="any"
+                              className="table-input"
+                              style={{ minWidth: 60, padding: '4px 6px' }}
+                              placeholder="0.000"
+                              value={lot.weight_g}
+                              onChange={e => updateCustomLot(lot._key, 'weight_g', e.target.value)}
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="number"
+                              step="any"
+                              className="table-input"
+                              style={{ minWidth: 50, padding: '4px 6px' }}
+                              placeholder="0.000"
+                              value={lot.tunch_pct}
+                              onChange={e => updateCustomLot(lot._key, 'tunch_pct', e.target.value)}
+                            />
+                          </td>
+                          <td className="font-mono font-semibold" style={{ color: 'var(--clr-gold)' }}>
+                            {lot.pure_g ? `${lot.pure_g} g` : '—'}
+                          </td>
+                          <td>
+                            <button
+                              className="btn btn-maroon btn-sm btn-icon"
+                              onClick={() => removeCustomLot(lot._key)}
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td colSpan={2}>{t('total_outward', 'Total Outward')}</td>
+                      <td className="font-mono">
+                        {totalWeight.toLocaleString('en-IN', { maximumFractionDigits: 3 })} g
+                      </td>
+                      <td className="font-mono">{avgTunch.toFixed(2)}%</td>
+                      <td className="font-mono" style={{ color: 'var(--clr-gold)', fontSize: '1.05rem' }}>
+                        <strong>{totalPure.toLocaleString('en-IN')} g</strong>
+                      </td>
+                      <td></td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
             <div className="table-scroll-hint mb-3">
               {t('swipe_hint', '↔ Swipe table horizontally to see all columns')}
             </div>

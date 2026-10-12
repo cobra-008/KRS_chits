@@ -117,7 +117,9 @@ export default function OutstandingPage() {
         const excessCredit = netPosition < 0 ? Math.abs(netPosition) : 0
 
         // Schemes summary
-        const enrolledSchemes = custMembers.map(m => `${m.groups?.name || 'Scheme'} (#${m.ticket_no})`).join(', ')
+        const enrolledSchemes = custMembers.map(m =>
+          `${m.groups?.name || 'Scheme'} (#${m.ticket_no}${m.is_withdrawn ? ` · Withdrawn M${m.withdrawal_month || 1}` : ''})`
+        ).join(', ')
 
         return {
           ...cust,

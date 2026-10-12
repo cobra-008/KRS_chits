@@ -76,8 +76,9 @@ export default function CustomerLedgerModal({ customer, onClose }) {
 
           const isThisCustomerWithdrawer = draw?.group_members?.customer_id === customer.id || draw?.withdrawer_member_id === mem.id
 
+          const sortDate = draw?.draw_date || draw?.created_at || grp.start_date || '2000-01-01'
           events.push({
-            _sort: draw ? draw.draw_date : grp.start_date || '2000-01-01',
+            _sort: sortDate,
             type: 'chit_demand',
             date: draw?.draw_date || null,
             ref: `${grp.name} · M${m}`,
@@ -95,8 +96,9 @@ export default function CustomerLedgerModal({ customer, onClose }) {
       // From vouchers: receipt = credit, issue = debit
       for (const v of vouchers) {
         const pure = parseFloat(v.total_pure_g) || 0
+        const sortDate = v.voucher_date || v.created_at || '2000-01-01'
         events.push({
-          _sort: v.voucher_date,
+          _sort: sortDate,
           type: v.type === 'receipt' ? 'receipt' : 'issue',
           date: v.voucher_date,
           ref: `${v.type === 'receipt' ? 'RV' : 'IV'}-${String(v.voucher_no).padStart(4,'0')}`,
@@ -106,22 +108,28 @@ export default function CustomerLedgerModal({ customer, onClose }) {
         })
       }
 
-      // Sort by date ascending
+      // Sort by date ascending (chronological for balance calculation)
       events.sort((a, b) => {
-        if (!a._sort) return -1
-        if (!b._sort) return 1
-        return a._sort.localeCompare(b._sort)
+        const dA = a._sort || ''
+        const dB = b._sort || ''
+        if (dA !== dB) return dA.localeCompare(dB)
+        const mA = a.monthNo || 0
+        const mB = b.monthNo || 0
+        if (mA !== mB) return mA - mB
+        return (a.ref || '').localeCompare(b.ref || '')
       })
 
       // Running balance (positive = customer owes us, negative = we owe customer)
       let runningBalance = 0
       const rows = events.map(ev => {
-        runningBalance += ev.debitG - ev.creditG
+        runningBalance += (ev.debitG || 0) - (ev.creditG || 0)
         const closingBalance = Math.round(runningBalance)  // grams due (positive) or excess (negative)
         return { ...ev, closingBalance }
       })
 
-      setLedgerRows(rows)
+      // Latest entries on top (reverse chronological order) as requested
+      const reversedRows = [...rows].reverse()
+      setLedgerRows(reversedRows)
     } catch (err) {
       console.error(err)
       toast.error('Failed to load ledger')
@@ -132,12 +140,13 @@ export default function CustomerLedgerModal({ customer, onClose }) {
 
   const totalDebits = ledgerRows.reduce((s, r) => s + (r.debitG || 0), 0)
   const totalCredits = ledgerRows.reduce((s, r) => s + (r.creditG || 0), 0)
-  const finalBalance = ledgerRows.length > 0 ? ledgerRows[ledgerRows.length - 1].closingBalance : 0
+  // Since ledgerRows is latest-first, the first element has the latest closing balance
+  const finalBalance = ledgerRows.length > 0 ? ledgerRows[0].closingBalance : 0
 
   const getLedgerParams = () => ({
     customer,
     memberships,
-    ledgerRows,
+    ledgerRows: [...ledgerRows].reverse(), // pass chronological to PDF generator
     totalDebits,
     totalCredits,
     finalBalance,
@@ -154,22 +163,24 @@ export default function CustomerLedgerModal({ customer, onClose }) {
   return (
     <div className="modal-backdrop" role="dialog" aria-modal="true">
       <div className="modal modal-xl">
-        <div className="modal-header no-print">
-          <div>
-            <div className="modal-title">{t('customer_ledger_title')} — {customer.name}</div>
+        <div className="modal-header no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 10 }}>
+          <div style={{ flex: '1 1 200px' }}>
+            <div className="modal-title" style={{ fontSize: '1.15rem', wordBreak: 'break-word' }}>
+              {t('customer_ledger_title')} — {customer.name}
+            </div>
             <div className="text-xs text-muted mt-1">
               {customer.phone && `📞 ${customer.phone}`}
               {customer.city && ` · ${customer.city}`}
             </div>
           </div>
-          <div className="flex gap-2">
-            <button className="btn btn-secondary btn-sm" onClick={handleDownload}>
-              <Download size={13} /> Download PDF
+          <div className="flex gap-1 items-center" style={{ flexShrink: 0 }}>
+            <button className="btn btn-secondary btn-sm" onClick={handleDownload} title="Download PDF" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
+              <Download size={13} /> PDF
             </button>
-            <button className="btn btn-ghost btn-sm" onClick={handlePrint}>
+            <button className="btn btn-ghost btn-sm" onClick={handlePrint} title="Print Voucher" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
               <Printer size={13} /> {t('print')}
             </button>
-            <button className="btn btn-ghost btn-sm btn-icon" onClick={onClose}><X size={16} /></button>
+            <button className="btn btn-ghost btn-sm btn-icon" onClick={onClose}><X size={18} /></button>
           </div>
         </div>
 
@@ -182,26 +193,28 @@ export default function CustomerLedgerModal({ customer, onClose }) {
                   background: 'var(--clr-gold-bg)',
                   border: '1px solid var(--clr-gold-dim)',
                   borderRadius: 'var(--r-md)',
-                  padding: '6px 14px',
-                  fontSize: '0.8rem',
+                  padding: '6px 12px',
+                  fontSize: '0.78rem',
                 }}>
                   <span className="text-gold font-semibold">{m.groups?.name}</span>
                   <span className="text-muted"> · Ticket #{m.ticket_no}</span>
                   <span className="text-muted"> · {m.share_pct || 100}% Share</span>
-                  <span className="text-muted"> · {gramsToKg(m.groups?.num_months * m.groups?.unit_limit_g)} kg liability</span>
+                  <span className="text-muted"> · {gramsToKg(m.groups?.num_months * m.groups?.unit_limit_g)} kg</span>
                   {m.is_withdrawn && (
-                    <span className="badge badge-maroon" style={{ marginLeft: 6, fontSize: '0.65rem' }}>Withdrawn M{m.withdrawal_month}</span>
+                    <span className="badge badge-maroon font-mono font-semibold" style={{ marginLeft: 6, fontSize: '0.68rem', padding: '2px 7px' }}>
+                      Withdrawn M{m.withdrawal_month || 1}
+                    </span>
                   )}
                 </div>
               ))}
             </div>
           )}
 
-          {/* Top 3 Stat Cards: Debits (Due Demands), Credits (Deposits / Chit Disbursals), Net Position */}
-          <div className="stats-grid mb-5" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+          {/* Top 3 Stat Cards: Responsive layout */}
+          <div className="stats-grid stats-grid-3 mb-4">
             <div className="stat-card" style={{ borderLeft: '4px solid var(--clr-danger)' }}>
               <div className="stat-label">TOTAL DEMANDED / ISSUED (DUE)</div>
-              <div className="stat-value font-mono text-danger" style={{ fontSize: '1.4rem' }}>
+              <div className="stat-value font-mono text-danger" style={{ fontSize: '1.35rem' }}>
                 {totalDebits.toLocaleString('en-IN', { maximumFractionDigits: 3 })} g
               </div>
               <div className="stat-sub">Total fine owed by customer</div>
@@ -209,7 +222,7 @@ export default function CustomerLedgerModal({ customer, onClose }) {
 
             <div className="stat-card" style={{ borderLeft: '4px solid var(--clr-success)' }}>
               <div className="stat-label">TOTAL CREDITED / ADVANCE (EXCESS)</div>
-              <div className="stat-value font-mono text-success" style={{ fontSize: '1.4rem' }}>
+              <div className="stat-value font-mono text-success" style={{ fontSize: '1.35rem' }}>
                 {totalCredits.toLocaleString('en-IN', { maximumFractionDigits: 3 })} g
               </div>
               <div className="stat-sub">Receipts + Chit net silver held</div>
@@ -217,7 +230,7 @@ export default function CustomerLedgerModal({ customer, onClose }) {
 
             <div className="stat-card" style={{ borderLeft: `4px solid ${finalBalance > 0 ? 'var(--clr-danger)' : finalBalance < 0 ? 'var(--clr-success)' : 'var(--clr-gold)'}` }}>
               <div className="stat-label">{t('net_closing_balance', 'NET CLOSING BALANCE')}</div>
-              <div className={`stat-value font-mono ${finalBalance > 0 ? 'text-danger' : finalBalance < 0 ? 'text-success' : 'text-gold'}`} style={{ fontSize: '1.4rem' }}>
+              <div className={`stat-value font-mono ${finalBalance > 0 ? 'text-danger' : finalBalance < 0 ? 'text-success' : 'text-gold'}`} style={{ fontSize: '1.35rem' }}>
                 {finalBalance > 0
                   ? `${Math.abs(finalBalance).toLocaleString('en-IN')} g ${t('badge_due', 'Due')}`
                   : finalBalance < 0

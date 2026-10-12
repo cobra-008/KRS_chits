@@ -271,33 +271,41 @@ export default function HomePage({ onNavigate }) {
                               </tr>
                             </thead>
                             <tbody>
-                              {groupMembers.map((member, idx) => (
-                                <tr
-                                  key={member.id}
-                                  style={{ cursor: 'pointer' }}
-                                  onDoubleClick={() => setLedgerCustomer(member.customers)}
-                                  title="Double-click to view ledger"
-                                >
-                                  <td>
-                                    <span className="badge badge-gold font-mono">#{member.ticket_no ?? (idx + 1)}</span>
-                                  </td>
-                                  <td>
-                                    <span className="badge badge-teal font-mono font-semibold">
-                                      {member.share_pct || 100}%
-                                    </span>
-                                  </td>
-                                  <td>
-                                    <div className="flex items-center gap-2">
-                                      <span className="font-semibold">{member.customers?.name || '—'}</span>
-                                      {member.is_withdrawn && (
-                                        <span className="badge badge-maroon" style={{ fontSize: '0.65rem' }}>
-                                          {t('badge_withdrawn', 'Withdrawn')}
-                                        </span>
-                                      )}
-                                    </div>
-                                  </td>
-                                </tr>
-                              ))}
+                              {groupMembers.map((member, idx) => {
+                                let wMonth = member.withdrawal_month
+                                if (!wMonth && groupDraws.length > 0) {
+                                  const d = groupDraws.find(dr => dr.withdrawer_member_id === member.id)
+                                  if (d) wMonth = d.month_no
+                                }
+
+                                return (
+                                  <tr
+                                    key={member.id}
+                                    style={{ cursor: 'pointer' }}
+                                    onDoubleClick={() => setLedgerCustomer(member.customers)}
+                                    title="Double-click to view ledger"
+                                  >
+                                    <td>
+                                      <span className="badge badge-gold font-mono">#{member.ticket_no ?? (idx + 1)}</span>
+                                    </td>
+                                    <td>
+                                      <span className="badge badge-teal font-mono font-semibold">
+                                        {member.share_pct || 100}%
+                                      </span>
+                                    </td>
+                                    <td>
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-semibold">{member.customers?.name || '—'}</span>
+                                        {member.is_withdrawn && (
+                                          <span className="badge badge-maroon font-mono font-semibold" style={{ fontSize: '0.68rem', padding: '2px 8px' }}>
+                                            Withdrawn M{wMonth || member.withdrawal_month || 1}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )
+                              })}
                             </tbody>
                           </table>
                       </div>

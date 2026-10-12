@@ -112,6 +112,8 @@ html, body, #root {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  height: 100dvh;
+  min-height: 100dvh;
   overflow: hidden;
   background: var(--clr-bg);
 }
@@ -673,13 +675,16 @@ tfoot td {
 .modal-backdrop {
   position: fixed;
   inset: 0;
+  height: 100%;
+  height: 100dvh;
   background: rgba(15, 23, 42, 0.45);
   backdrop-filter: blur(6px);
   z-index: 200;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: max(16px, env(safe-area-inset-top, 16px)) max(16px, env(safe-area-inset-right, 16px)) max(16px, env(safe-area-inset-bottom, 16px)) max(16px, env(safe-area-inset-left, 16px));
+  box-sizing: border-box;
   animation: backdropIn var(--dur-base) var(--ease);
 }
 
@@ -694,6 +699,7 @@ tfoot td {
   border-radius: var(--r-xl);
   width: 100%;
   max-height: 88vh;
+  max-height: calc(100dvh - 32px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -715,7 +721,7 @@ tfoot td {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 22px 32px;
+  padding: 20px 28px;
   border-bottom: 1px solid var(--clr-border-soft);
   background: #FAFBFC;
   flex-shrink: 0;
@@ -730,9 +736,11 @@ tfoot td {
 }
 
 .modal-body {
-  padding: 28px 32px;
+  padding: 24px 28px;
   overflow-y: auto;
-  flex: 1;
+  -webkit-overflow-scrolling: touch;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .modal-footer {
@@ -785,15 +793,27 @@ tfoot td {
   border: 1px solid rgba(139, 26, 26, 0.22);
 }
 
-/* ── Decongested Stat Cards: White with Silver Sheen ─────── */
-.stat-grid {
+.stat-grid, .stats-grid {
   display: grid;
   gap: 22px;
 }
 
-.stat-grid-4 { grid-template-columns: repeat(4, 1fr); }
-.stat-grid-3 { grid-template-columns: repeat(3, 1fr); }
-.stat-grid-2 { grid-template-columns: repeat(2, 1fr); }
+.stat-grid-4, .stats-grid-4 { grid-template-columns: repeat(4, 1fr); }
+.stat-grid-3, .stats-grid-3 { grid-template-columns: repeat(3, 1fr); }
+.stat-grid-2, .stats-grid-2 { grid-template-columns: repeat(2, 1fr); }
+
+/* Chit settlement formula responsive grids */
+.chit-formula-top-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+.chit-formula-bottom-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.3fr;
+  gap: 14px;
+  align-items: center;
+}
 
 .stat-card {
   background: var(--clr-surface);
@@ -1440,28 +1460,76 @@ tfoot td {
 
   /* Modals on mobile */
   .modal-backdrop {
-    padding: 8px;
+    padding: max(8px, env(safe-area-inset-top, 8px)) max(8px, env(safe-area-inset-right, 8px)) max(8px, env(safe-area-inset-bottom, 8px)) max(8px, env(safe-area-inset-left, 8px));
   }
   .modal {
-    max-height: 96vh;
+    max-height: calc(100dvh - 16px);
+    max-height: calc(100vh - 16px);
     border-radius: 14px;
+    margin: 0;
   }
   .modal-header {
-    padding: 14px 16px;
+    padding: 12px 14px;
+    flex-shrink: 0;
   }
   .modal-title {
     font-size: 1.05rem;
   }
   .modal-body {
-    padding: 16px 14px;
+    padding: 14px 12px;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   .modal-footer {
-    padding: 12px 14px;
+    padding: 10px 14px;
+    flex-shrink: 0;
     flex-wrap: wrap;
   }
   .modal-footer .btn {
     flex: 1;
     justify-content: center;
+  }
+
+  /* Tables on mobile */
+  table {
+    font-size: 0.8rem;
+  }
+  thead th {
+    padding: 8px 6px;
+    font-size: 0.72rem;
+    letter-spacing: 0.02em;
+  }
+  tbody td {
+    padding: 8px 6px;
+    font-size: 0.8rem;
+  }
+  tfoot td {
+    padding: 9px 6px;
+    font-size: 0.82rem;
+  }
+  .table-input {
+    padding: 6px 6px;
+    font-size: 0.8rem;
+    min-width: 50px;
+    border-radius: 6px;
+  }
+
+  /* Formula & stat grids on mobile */
+  .chit-formula-top-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+  .chit-formula-bottom-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+  .stat-grid-4, .stats-grid-4,
+  .stat-grid-3, .stats-grid-3,
+  .stat-grid-2, .stats-grid-2 {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
   }
 
   /* Login card on mobile */
