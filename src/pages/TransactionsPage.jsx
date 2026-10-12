@@ -1,8 +1,17 @@
 import { useState, useEffect } from 'react'
-import { Search, Filter, Printer } from 'lucide-react'
+import { Search, Filter, Printer, Download, Eye } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { supabase } from '../lib/supabase'
 import { txnLogApi } from '../lib/api'
 import { format, parseISO } from 'date-fns'
+import {
+  downloadReceiptVoucherPdf,
+  printReceiptVoucher,
+  downloadIssueVoucherPdf,
+  printIssueVoucher,
+  downloadChitSettlementPdf,
+  printChitSettlementVoucher,
+} from '../lib/pdfGenerator'
 import { useLanguage } from '../context/LanguageContext'
 
 export default function TransactionsPage() {
@@ -16,6 +25,7 @@ export default function TransactionsPage() {
   const [entries, setEntries] = useState([])
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState({ date: '', type: '', search: '' })
+  const [actionLoading, setActionLoading] = useState(null)
 
   const load = async () => {
     try {
@@ -39,6 +49,119 @@ export default function TransactionsPage() {
     if (e.key === 'Enter') load()
   }
 
+  const handleDocumentAction = async (entry, isPrint = false) => {
+    setActionLoading(entry.id)
+    try {
+      if (entry.type === 'receipt' || entry.type === 'issue') {
+        let voucher = null
+
+        // Attempt 1: Fetch by ref_id
+        if (entry.ref_id) {
+          const { data } = await supabase
+            .from('vouchers')
+            .select('*, voucher_lots(*), customers(*)')
+            .eq('id', entry.ref_id)
+            .maybeSingle()
+          voucher = data
+        }
+
+        // Attempt 2: Fetch by voucher_no parsed from voucher_ref
+        if (!voucher && entry.voucher_ref) {
+          const numMatch = entry.voucher_ref.match(/\d+/)
+          if (numMatch) {
+            const vNo = parseInt(numMatch[0])
+            const { data } = await supabase
+              .from('vouchers')
+              .select('*, voucher_lots(*), customers(*)')
+              .eq('voucher_no', vNo)
+              .eq('type', entry.type)
+              .maybeSingle()
+            voucher = data
+          }
+        }
+
+        const vNo = voucher?.voucher_no || parseInt(entry.voucher_ref?.match(/\d+/)?.[0]) || 1
+        const customer = voucher?.customers || { name: entry.customer_name || 'Customer' }
+        const lots = voucher?.voucher_lots?.length > 0 ? voucher.voucher_lots : [{
+          silver_type: 'K',
+          patla_no: '—',
+          weight_g: entry.pure_in_g || entry.pure_out_g || 0,
+          tunch_pct: 100,
+          pure_g: entry.pure_in_g || entry.pure_out_g || 0,
+        }]
+        const totalGrossG = lots.reduce((s, l) => s + (parseFloat(l.weight_g) || 0), 0)
+        const totalPureG = parseFloat(entry.pure_in_g || entry.pure_out_g) || 0
+
+        const params = {
+          voucherNo: vNo,
+          voucherDate: voucher?.voucher_date || entry.log_date,
+          customer,
+          lots,
+          totalGrossG,
+          totalPureG,
+        }
+
+        if (entry.type === 'receipt') {
+          if (isPrint) printReceiptVoucher(params)
+          else await downloadReceiptVoucherPdf(params)
+        } else {
+          if (isPrint) printIssueVoucher(params)
+          else await downloadIssueVoucherPdf(params)
+        }
+      } else if (entry.type === 'chit_settlement') {
+        let draw = null
+        if (entry.ref_id) {
+          const { data } = await supabase
+            .from('chit_draws')
+            .select('*, groups(*), group_members(*, customers(*))')
+            .eq('id', entry.ref_id)
+            .maybeSingle()
+          draw = data
+        }
+
+        const grp = draw?.groups || {}
+        const mem = draw?.group_members || {}
+        const custName = mem?.customers?.name || entry.customer_name || 'Member'
+        const roundNo = draw?.month_no || parseInt(entry.voucher_ref?.match(/M(\d+)/)?.[1]) || 1
+        const totalCapG = parseFloat(draw?.total_capacity_g) || ((grp.num_months || 20) * (grp.unit_limit_g || 1000))
+        const discountG = parseFloat(draw?.discount_g) || 0
+        const profitG = parseFloat(draw?.company_profit_g) || Math.round(totalCapG * 0.04)
+        const divG = parseFloat(draw?.dividend_per_member_g) || 0
+        const premG = parseFloat(draw?.monthly_premium_g) || 0
+        const oldDuesG = parseFloat(draw?.old_dues_g) || 0
+        const netDisburseG = parseFloat(draw?.net_silver_to_issue_g) || parseFloat(entry.pure_in_g) || 0
+
+        const params = {
+          schemeName: grp.name || 'KRS Silver Scheme',
+          roundNo,
+          totalRounds: grp.num_months || 20,
+          drawDate: draw?.draw_date || entry.log_date,
+          customerName: custName,
+          ticketNo: mem.ticket_no || 1,
+          sharePct: draw?.withdrawer_share_pct || mem.share_pct || 100,
+          grossCapacityG: totalCapG,
+          discountG,
+          companyProfitG: profitG,
+          dividendPerMemberG: divG,
+          monthlyPremiumG: premG,
+          oldDuesG,
+          netDisburseG,
+          deliveryStatus: 'Held as Customer Excess Fine',
+        }
+
+        if (isPrint) printChitSettlementVoucher(params)
+        else await downloadChitSettlementPdf(params)
+      }
+
+      toast.success(isPrint ? 'Print document generated!' : 'PDF downloaded successfully!')
+    } catch (err) {
+      console.error(err)
+      toast.error('Failed to generate document PDF')
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
   const totalIn  = entries.reduce((s, e) => s + (parseFloat(e.pure_in_g)  || 0), 0)
   const totalOut = entries.reduce((s, e) => s + (parseFloat(e.pure_out_g) || 0), 0)
   const net = totalIn - totalOut
@@ -51,7 +174,7 @@ export default function TransactionsPage() {
           <p className="page-sub">{t('day_book_sub')}</p>
         </div>
         <button className="btn btn-ghost btn-sm" onClick={() => window.print()}>
-          <Printer /> {t('btn_print_daybook')}
+          <Printer size={14} /> {t('btn_print_daybook')}
         </button>
       </div>
 
@@ -120,7 +243,7 @@ export default function TransactionsPage() {
 
           <div className="actions">
             <button className="btn btn-gold btn-sm" onClick={load}>
-              <Filter /> {t('filter')}
+              <Filter size={14} /> {t('filter')}
             </button>
             <button
               className="btn btn-ghost btn-sm"
@@ -143,7 +266,7 @@ export default function TransactionsPage() {
         <>
           <div className="table-scroll-hint mb-2">{t('swipe_hint')}</div>
           <div className="table-wrap" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-            <table style={{ minWidth: 680 }}>
+            <table style={{ minWidth: 760 }}>
               <thead>
                 <tr>
                   <th>{t('th_datetime')}</th>
@@ -153,11 +276,14 @@ export default function TransactionsPage() {
                   <th>{t('th_particulars')}</th>
                   <th>{t('th_in_pure')}</th>
                   <th>{t('th_out_pure')}</th>
+                  <th style={{ textAlign: 'center', width: 95 }}>{t('th_actions', 'Actions')}</th>
                 </tr>
               </thead>
               <tbody>
                 {entries.map(entry => {
                   const typeInfo = TYPE_LABELS[entry.type] || { label: entry.type, badge: 'badge-gray' }
+                  const isLoadingThis = actionLoading === entry.id
+
                   return (
                     <tr key={entry.id}>
                       <td className="text-secondary text-sm">
@@ -182,6 +308,26 @@ export default function TransactionsPage() {
                           ? `−${parseFloat(entry.pure_out_g).toLocaleString('en-IN')} g`
                           : '—'
                         }
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <div className="flex gap-1 items-center justify-center">
+                          <button
+                            className="btn btn-ghost btn-sm btn-icon"
+                            title={lang === 'ta' ? 'அச்சிடு / காண்க' : 'View / Print PDF'}
+                            onClick={() => handleDocumentAction(entry, true)}
+                            disabled={isLoadingThis}
+                          >
+                            <Printer size={13} />
+                          </button>
+                          <button
+                            className="btn btn-ghost btn-sm btn-icon"
+                            title={lang === 'ta' ? 'PDF பதிவிறக்கு' : 'Download PDF'}
+                            onClick={() => handleDocumentAction(entry, false)}
+                            disabled={isLoadingThis}
+                          >
+                            <Download size={13} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   )

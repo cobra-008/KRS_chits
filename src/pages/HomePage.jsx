@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { FileText, Send, Users, ChevronDown, ChevronRight, Plus, Minus, Edit2, Trash2 } from 'lucide-react'
+import { supabase } from '../lib/supabase'
 import { groupsApi, membersApi, chitDrawsApi } from '../lib/api'
 import { getTotalFineDemanded, gramsToKg, formatGrams } from '../lib/silverCalc'
 import { format, parseISO } from 'date-fns'
@@ -29,9 +30,29 @@ export default function HomePage({ onNavigate }) {
   const loadGroups = useCallback(async () => {
     try {
       setLoading(true)
-      const data = await groupsApi.getAll()
-      setGroups(data)
+      const [groupsData, memRes, drawRes] = await Promise.all([
+        groupsApi.getAll(),
+        supabase.from('group_members').select('*, customers(*)').order('ticket_no'),
+        supabase.from('chit_draws').select('*').order('month_no')
+      ])
+
+      const membersMap = {}
+      ;(memRes.data || []).forEach(m => {
+        if (!membersMap[m.group_id]) membersMap[m.group_id] = []
+        membersMap[m.group_id].push(m)
+      })
+
+      const drawsMap = {}
+      ;(drawRes.data || []).forEach(d => {
+        if (!drawsMap[d.group_id]) drawsMap[d.group_id] = []
+        drawsMap[d.group_id].push(d)
+      })
+
+      setGroups(groupsData || [])
+      setMembers(membersMap)
+      setDraws(drawsMap)
     } catch (err) {
+      console.error(err)
       toast.error('Failed to load groups')
     } finally {
       setLoading(false)
@@ -40,25 +61,8 @@ export default function HomePage({ onNavigate }) {
 
   useEffect(() => { loadGroups() }, [loadGroups])
 
-  const toggleGroup = async (groupId) => {
-    const isOpen = expanded[groupId]
-    setExpanded(p => ({ ...p, [groupId]: !isOpen }))
-
-    if (!isOpen && !members[groupId]) {
-      setLoadingMembers(p => ({ ...p, [groupId]: true }))
-      try {
-        const [mData, dData] = await Promise.all([
-          membersApi.getByGroup(groupId),
-          chitDrawsApi.getByGroup(groupId),
-        ])
-        setMembers(p => ({ ...p, [groupId]: mData }))
-        setDraws(p => ({ ...p, [groupId]: dData }))
-      } catch {
-        toast.error('Failed to load group members')
-      } finally {
-        setLoadingMembers(p => ({ ...p, [groupId]: false }))
-      }
-    }
+  const toggleGroup = (groupId) => {
+    setExpanded(p => ({ ...p, [groupId]: !p[groupId] }))
   }
 
   const refreshGroup = async (groupId) => {
@@ -68,22 +72,6 @@ export default function HomePage({ onNavigate }) {
     ])
     setMembers(p => ({ ...p, [groupId]: mData }))
     setDraws(p => ({ ...p, [groupId]: dData }))
-  }
-
-  const handleIncrementMonth = async (group) => {
-    if (group.months_happened >= group.num_months) {
-      toast.error('Group has completed all months')
-      return
-    }
-    try {
-      await groupsApi.incrementMonth(group.id, group.months_happened, group.num_months)
-      toast.success(`Month ${group.months_happened + 1} recorded`)
-      loadGroups()
-      // refresh members if open
-      if (expanded[group.id]) refreshGroup(group.id)
-    } catch {
-      toast.error('Failed to update month')
-    }
   }
 
   const handleRemoveMember = async (member) => {
@@ -194,19 +182,9 @@ export default function HomePage({ onNavigate }) {
 
                   <div className="group-card-actions" onClick={e => e.stopPropagation()}>
                     {/* Members count */}
-                    <span className="badge badge-gray">
-                      {groupMembers.length > 0 ? `${groupMembers.length}` : '0'} {t('members_count', 'members')}
+                    <span className="badge badge-gray font-semibold">
+                      {groupMembers.length} {t('members_count', 'members')}
                     </span>
-
-                    {/* +Month button */}
-                    <button
-                      id={`btn-incr-month-${group.id}`}
-                      className="btn btn-ghost btn-sm"
-                      title="Record next month"
-                      onClick={() => handleIncrementMonth(group)}
-                    >
-                      <Plus /> {t('btn_plus_month', 'Month')}
-                    </button>
 
                     {/* Generate Chit */}
                     <button

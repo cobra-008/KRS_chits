@@ -5,20 +5,20 @@ import { calcChitDraw, gramsToKg } from '../../lib/silverCalc'
 import { downloadChitSettlementPdf, printChitSettlementVoucher } from '../../lib/pdfGenerator'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
-import { Trophy, Printer, ArrowRight, X, Download } from 'lucide-react'
+import { Trophy, Printer, X, Download, CheckCircle2 } from 'lucide-react'
 import { useLanguage } from '../../context/LanguageContext'
 
-export default function GenerateChitModal({ group, members: initialMembers, draws: initialDraws, onClose, onSaved, onNavigate }) {
+export default function GenerateChitModal({ group, members: initialMembers, onClose, onSaved }) {
   const { t, lang } = useLanguage()
   const [allGroups, setAllGroups] = useState([])
   const [selectedGroupId, setSelectedGroupId] = useState(group?.id || '')
   const [groupMembers, setGroupMembers] = useState(initialMembers || [])
+  const [existingDraws, setExistingDraws] = useState([])
   const [drawDate, setDrawDate] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [selectedRound, setSelectedRound] = useState(1)
   const [withdrawerMemberId, setWithdrawerMemberId] = useState('')
   const [discountG, setDiscountG] = useState('')
   const [oldDuesG, setOldDuesG] = useState('')
-  const [deliveryStatus, setDeliveryStatus] = useState('hold_excess')
   const [saving, setSaving] = useState(false)
 
   // Load all groups if not present
@@ -33,19 +33,43 @@ export default function GenerateChitModal({ group, members: initialMembers, draw
 
   const currentGroup = allGroups.find(g => g.id === selectedGroupId) || group || {}
 
+  // Load members and existing draws for this group
   useEffect(() => {
     if (currentGroup?.id) {
-      membersApi.getByGroup(currentGroup.id).then(mems => {
-        setGroupMembers(mems || [])
-        const eligible = (mems || []).filter(m => !m.is_withdrawn)
-        if (eligible.length > 0 && !withdrawerMemberId) {
+      Promise.all([
+        membersApi.getByGroup(currentGroup.id),
+        supabase.from('chit_draws').select('*').eq('group_id', currentGroup.id).order('month_no')
+      ]).then(([mems, drawRes]) => {
+        const memList = mems || []
+        const drawsList = drawRes.data || []
+        setGroupMembers(memList)
+        setExistingDraws(drawsList)
+
+        // Select first eligible member who hasn't withdrawn
+        const eligible = memList.filter(m => !m.is_withdrawn)
+        if (eligible.length > 0) {
           setWithdrawerMemberId(eligible[0].id)
+        } else {
+          setWithdrawerMemberId('')
         }
-      }).catch(() => {})
-      const nextM = (currentGroup.months_happened || 0) + 1
-      setSelectedRound(nextM <= (currentGroup.num_months || 20) ? nextM : currentGroup.num_months || 20)
+
+        // Find completed months and pick the first available undrawn month
+        const drawnSet = new Set(drawsList.map(d => d.month_no))
+        const totalMonths = currentGroup.num_months || 20
+        let nextUndrawn = 1
+        while (drawnSet.has(nextUndrawn) && nextUndrawn <= totalMonths) {
+          nextUndrawn++
+        }
+        setSelectedRound(nextUndrawn <= totalMonths ? nextUndrawn : totalMonths)
+      }).catch(err => {
+        console.error(err)
+        toast.error('Failed to load group details')
+      })
     }
   }, [currentGroup?.id])
+
+  const drawnMonthsSet = new Set(existingDraws.map(d => d.month_no))
+  const isSelectedRoundDrawn = drawnMonthsSet.has(parseInt(selectedRound))
 
   const selectedMember = groupMembers.find(m => m.id === withdrawerMemberId)
   const withdrawerSharePct = selectedMember?.share_pct || 100
@@ -57,7 +81,7 @@ export default function GenerateChitModal({ group, members: initialMembers, draw
   const withdrawerCapKg = (parseFloat(schemeBaseKg) * shareRatio).toFixed(3)
   const baseProfitG = Math.round((numMonths * unitLimitG) * 0.04)
 
-  // Calculation engine matches user example
+  // Pure mathematical calculation engine matching user's exact specification
   const calc = calcChitDraw({
     numMonths,
     unitLimitG,
@@ -83,16 +107,34 @@ export default function GenerateChitModal({ group, members: initialMembers, draw
     monthlyPremiumG: calc.monthlyPremiumG,
     oldDuesG: calc.oldDuesG,
     netDisburseG: calc.netSilverToIssueG,
-    deliveryStatus: deliveryStatus === 'hold_excess' ? 'Held as Customer Excess Fine' : 'Immediate Physical Delivery',
+    deliveryStatus: 'Held as Customer Excess Fine',
   })
 
-  const handleSave = async (isIssueNavigation = false) => {
-    if (!withdrawerMemberId) { toast.error('Select a withdrawing member'); return }
-    if (!currentGroup?.id)   { toast.error('Select a chit scheme'); return }
+  const handleSaveChit = async () => {
+    if (!currentGroup?.id) {
+      toast.error('Please select a chit scheme')
+      return
+    }
+    if (!withdrawerMemberId) {
+      toast.error('Please select an eligible withdrawing member')
+      return
+    }
+    if (selectedMember?.is_withdrawn) {
+      toast.error(`Member #${selectedMember.ticket_no} has already withdrawn in Month ${selectedMember.withdrawal_month}. Cannot withdraw again.`)
+      return
+    }
+    if (isSelectedRoundDrawn) {
+      toast.error(`Month ${selectedRound} has already been completed and settled. You cannot generate another chit for the same month.`)
+      return
+    }
+    if (!discountG || parseFloat(discountG) <= 0) {
+      toast.error('Accepted Auction Discount is mandatory. Please enter the accepted discount in grams.')
+      return
+    }
 
     setSaving(true)
     try {
-      // 1. Create chit draw
+      // 1. Create chit draw entry in database
       const draw = await chitDrawsApi.create({
         group_id: currentGroup.id,
         month_no: parseInt(selectedRound),
@@ -106,11 +148,11 @@ export default function GenerateChitModal({ group, members: initialMembers, draw
         monthly_premium_g: calc.monthlyPremiumG,
         old_dues_g: calc.oldDuesG,
         net_silver_to_issue_g: calc.netSilverToIssueG,
-        delivery_status: deliveryStatus,
+        delivery_status: 'hold_excess',
         withdrawer_share_pct: withdrawerSharePct,
       })
 
-      // 2. Advance group months_happened if this is the next round
+      // 2. Advance group months_happened if this round is greater
       if (parseInt(selectedRound) > (currentGroup.months_happened || 0)) {
         await supabase
           .from('groups')
@@ -118,11 +160,9 @@ export default function GenerateChitModal({ group, members: initialMembers, draw
           .eq('id', currentGroup.id)
       }
 
-      // 3. Update withdrawer member: mark withdrawn, record disbursed amount
+      // 3. Mark member as withdrawn specifically for this month and credit net fine
       const currentDeposited = parseFloat(selectedMember?.fine_deposited) || 0
-      const newDeposited = deliveryStatus === 'hold_excess'
-        ? currentDeposited + calc.netSilverToIssueG + calc.monthlyPremiumG
-        : currentDeposited + calc.monthlyPremiumG
+      const newDeposited = currentDeposited + calc.netSilverToIssueG + calc.monthlyPremiumG
 
       await membersApi.update(withdrawerMemberId, {
         is_withdrawn: true,
@@ -131,7 +171,7 @@ export default function GenerateChitModal({ group, members: initialMembers, draw
         fine_deposited: newDeposited,
       })
 
-      // 4. Log in transaction_log for withdrawer
+      // 4. Log in transaction_log for active ledger reflection
       try {
         await supabase.from('transaction_log').insert({
           log_date: drawDate,
@@ -141,29 +181,27 @@ export default function GenerateChitModal({ group, members: initialMembers, draw
           customer_id: selectedMember?.customer_id,
           customer_name: selectedMember?.customers?.name,
           voucher_ref: `CHIT-${currentGroup.name}-M${selectedRound}`,
-          description: `Month ${selectedRound} Chit Settlement — Withdrawer: ${selectedMember?.customers?.name} (${withdrawerSharePct}% Share) [${deliveryStatus === 'hold_excess' ? 'Held as Customer Excess Fine' : 'Physical Delivery'}]`,
-          pure_in_g: deliveryStatus === 'hold_excess' ? calc.netSilverToIssueG : 0,
-          pure_out_g: deliveryStatus === 'hold_excess' ? 0 : calc.netSilverToIssueG,
+          description: `Month ${selectedRound} Chit Draw Settlement — Withdrawer: ${selectedMember?.customers?.name} (${withdrawerSharePct}% Share) [Held as Customer Excess Fine]`,
+          pure_in_g: calc.netSilverToIssueG,
+          pure_out_g: 0,
         })
       } catch (logErr) {
         console.warn('Transaction log insert notice:', logErr)
       }
 
-      // 5. Automatically generate & download custom PDF
+      // 5. Automatically generate & download custom formal PDF
       try {
-        downloadChitSettlementPdf(getPdfParams())
+        await downloadChitSettlementPdf(getPdfParams())
       } catch (pdfErr) {
         console.warn('PDF auto-download notice:', pdfErr)
       }
 
-      toast.success(lang === 'ta' ? `மாதம் ${selectedRound} சீட்டு சேமிக்கப்பட்டது! PDF பதிவிறக்கப்பட்டது` : `Month ${selectedRound} Chit Settlement Saved & PDF Downloaded!`)
+      toast.success(lang === 'ta'
+        ? `மாதம் ${selectedRound} சீட்டு சேமிக்கப்பட்டது! PDF பதிவிறக்கப்பட்டது`
+        : `Month ${selectedRound} Chit Settlement Saved & PDF Downloaded!`
+      )
 
-      if (isIssueNavigation) {
-        onClose()
-        onNavigate('issue')
-      } else {
-        onSaved()
-      }
+      onSaved()
     } catch (err) {
       console.error(err)
       toast.error(err.message || 'Failed to save chit settlement')
@@ -177,6 +215,10 @@ export default function GenerateChitModal({ group, members: initialMembers, draw
   }
 
   const handleDownloadPdf = () => {
+    if (!discountG || parseFloat(discountG) <= 0) {
+      toast.error('Please enter accepted auction discount first')
+      return
+    }
     downloadChitSettlementPdf(getPdfParams())
   }
 
@@ -228,20 +270,23 @@ export default function GenerateChitModal({ group, members: initialMembers, draw
               </select>
             </div>
 
-            <div className="form-group" style={{ width: 180 }}>
+            <div className="form-group" style={{ width: 220 }}>
               <label className="form-label">
-                {t('draw_month_round', 'Draw Month / Round:')}
+                {t('draw_month_round', 'Draw Month / Round:')} <span className="text-danger">*</span>
               </label>
               <select
-                className="form-control"
+                className="form-control font-semibold"
                 value={selectedRound}
                 onChange={e => setSelectedRound(Number(e.target.value))}
               >
-                {Array.from({ length: numMonths }, (_, i) => i + 1).map(m => (
-                  <option key={m} value={m}>
-                    {lang === 'ta' ? `மாதம் ${m} / ${numMonths}` : `Month ${m} of ${numMonths}`}
-                  </option>
-                ))}
+                {Array.from({ length: numMonths }, (_, i) => i + 1).map(m => {
+                  const isDrawn = drawnMonthsSet.has(m)
+                  return (
+                    <option key={m} value={m} disabled={isDrawn}>
+                      {lang === 'ta' ? `மாதம் ${m} / ${numMonths}` : `Month ${m} of ${numMonths}`} {isDrawn ? '(✓ Completed)' : ''}
+                    </option>
+                  )
+                })}
               </select>
             </div>
 
@@ -258,6 +303,15 @@ export default function GenerateChitModal({ group, members: initialMembers, draw
             </div>
           </div>
 
+          {/* Already Completed Warning */}
+          {isSelectedRoundDrawn && (
+            <div className="card mb-4" style={{ background: 'var(--clr-danger-bg)', border: '1.5px solid var(--clr-danger)', padding: '10px 14px' }}>
+              <div className="text-danger font-bold text-xs">
+                ⚠️ Month {selectedRound} has already been drawn and settled! You cannot re-generate a chit for an already completed month.
+              </div>
+            </div>
+          )}
+
           {/* Row 2: Withdrawing Member & Accepted Auction Discount */}
           <div className="form-row mb-5">
             <div className="form-group flex-1">
@@ -273,7 +327,7 @@ export default function GenerateChitModal({ group, members: initialMembers, draw
                 <option value="">Select Member</option>
                 {groupMembers.map(m => (
                   <option key={m.id} value={m.id} disabled={m.is_withdrawn}>
-                    Ticket #{m.ticket_no} - {m.customers?.name} ({m.share_pct || 100}% Share) {m.is_withdrawn ? '(Withdrawn)' : ''}
+                    Ticket #{m.ticket_no} - {m.customers?.name} ({m.share_pct || 100}% Share) {m.is_withdrawn ? `[Withdrawn in Month ${m.withdrawal_month}]` : ''}
                   </option>
                 ))}
               </select>
@@ -282,20 +336,24 @@ export default function GenerateChitModal({ group, members: initialMembers, draw
               </div>
             </div>
 
-            <div className="form-group" style={{ width: 260 }}>
-              <label className="form-label">
-                {t('accepted_auction_discount', 'Accepted Auction Discount (g):')}
+            <div className="form-group" style={{ width: 280 }}>
+              <label className="form-label font-bold">
+                {t('accepted_auction_discount', 'Accepted Auction Discount (g):')} <span className="text-danger">*</span>
               </label>
               <input
                 id="chit-discount"
                 type="number"
                 step="any"
-                min="0"
+                min="1"
                 className="form-control font-mono font-bold"
                 value={discountG}
                 onChange={e => setDiscountG(e.target.value)}
                 placeholder="Enter discount (e.g. 9000)"
+                required
               />
+              <div className="text-xs text-muted mt-1">
+                Mandatory auction discount in grams
+              </div>
             </div>
           </div>
 
@@ -386,26 +444,12 @@ export default function GenerateChitModal({ group, members: initialMembers, draw
             </div>
           </div>
 
-          {/* Silver Delivery Status Dropdown */}
-          <div className="card" style={{ padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
-            <div>
-              <div className="font-bold text-primary">
-                {t('silver_delivery_status', 'Silver Delivery Status:')}
-              </div>
-              <div className="text-xs text-muted mt-1">
-                {t('silver_delivery_hint', 'Held silver reflects as Customer Excess Fine on account ledger.')}
-              </div>
+          {/* Account Credit Notice Card */}
+          <div className="card" style={{ padding: '12px 18px', background: 'var(--clr-success-bg)', border: '1px solid var(--clr-success)', display: 'flex', alignItems: 'center', gap: 12 }}>
+            <CheckCircle2 size={20} className="text-success" style={{ flexShrink: 0 }} />
+            <div className="text-xs text-success" style={{ lineHeight: 1.45 }}>
+              <strong>Automatic Account Credit:</strong> Upon generating this chit, the net fine ({calc.netSilverToIssueG.toLocaleString('en-IN')} g) will be credited to {selectedMember?.customers?.name || 'the member'}&apos;s account as <strong>Customer Excess Fine</strong>. When silver is physically handed over later, use the <strong>Issue Voucher</strong> page to record the disbursal from inventory.
             </div>
-
-            <select
-              className="form-control font-semibold"
-              value={deliveryStatus}
-              onChange={e => setDeliveryStatus(e.target.value)}
-              style={{ width: 340 }}
-            >
-              <option value="hold_excess">Hold as Customer Excess Fine (Account Credit)</option>
-              <option value="physical">Immediate Physical Silver Delivery</option>
-            </select>
           </div>
         </div>
 
@@ -432,23 +476,22 @@ export default function GenerateChitModal({ group, members: initialMembers, draw
 
           <div className="flex gap-3">
             <button
-              id="btn-save-chit"
               type="button"
-              className="btn btn-secondary"
-              onClick={() => handleSave(false)}
+              className="btn btn-ghost"
+              onClick={onClose}
               disabled={saving}
             >
-              {saving ? t('saving', 'Saving…') : t('save_chit_hold_excess', 'Save Chit & Generate PDF')}
+              {t('cancel', 'Cancel')}
             </button>
 
             <button
-              id="btn-chit-issue-voucher"
+              id="btn-save-chit"
               type="button"
               className="btn btn-gold"
-              onClick={() => handleSave(true)}
-              disabled={saving}
+              onClick={handleSaveChit}
+              disabled={saving || isSelectedRoundDrawn}
             >
-              {t('issue_voucher_btn', 'Issue Voucher')} <ArrowRight size={15} />
+              {saving ? t('saving', 'Saving…') : 'Generate & Save Chit'}
             </button>
           </div>
         </div>

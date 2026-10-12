@@ -1,9 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Plus, Trash2, Printer, Save, ChevronDown } from 'lucide-react'
+import { Plus, Trash2, Printer, Save, ChevronDown, Download } from 'lucide-react'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
 import { calcFine } from '../lib/silverCalc'
 import { customersApi, vouchersApi } from '../lib/api'
+import {
+  downloadReceiptVoucherPdf,
+  printReceiptVoucher,
+  downloadIssueVoucherPdf,
+  printIssueVoucher
+} from '../lib/pdfGenerator'
 import { useLanguage } from '../context/LanguageContext'
 
 const emptyLot = () => ({
@@ -86,8 +92,28 @@ export default function VoucherPage({ type = 'receipt' }) {
         })
       }
 
+      const voucherData = {
+        voucherNo: voucher.voucher_no,
+        voucherDate,
+        customer: selectedCustomer,
+        lots: validLots,
+        totalGrossG: totalWeight,
+        totalPureG: totalPure,
+      }
+
       toast.success(`${isReceipt ? 'Receipt' : 'Issue'} Voucher #${voucher.voucher_no} saved!`)
       setSavedVoucher({ ...voucher, lots: validLots, customer: selectedCustomer })
+
+      // Auto-download PDF
+      try {
+        if (isReceipt) {
+          downloadReceiptVoucherPdf(voucherData)
+        } else {
+          downloadIssueVoucherPdf(voucherData)
+        }
+      } catch (pdfErr) {
+        console.warn('PDF export notice:', pdfErr)
+      }
 
       // Reset form
       setLots([emptyLot()])
@@ -100,10 +126,47 @@ export default function VoucherPage({ type = 'receipt' }) {
     }
   }
 
-  /* ── Print ── */
+  /* ── Print & Download ── */
+  const getVoucherParams = () => {
+    if (savedVoucher) {
+      const gWt = (savedVoucher.lots || []).reduce((s, l) => s + (parseFloat(l.weight_g) || 0), 0)
+      const pWt = (savedVoucher.lots || []).reduce((s, l) => s + (parseFloat(l.pure_g) || 0), 0)
+      return {
+        voucherNo: savedVoucher.voucher_no,
+        voucherDate: savedVoucher.voucher_date || voucherDate,
+        customer: savedVoucher.customer || selectedCustomer || { name: 'Customer' },
+        lots: savedVoucher.lots || [],
+        totalGrossG: gWt,
+        totalPureG: pWt,
+      }
+    }
+    const validLots = lots.filter(l => l.weight_g && l.tunch_pct)
+    return {
+      voucherNo: 1,
+      voucherDate,
+      customer: selectedCustomer || { name: 'Customer' },
+      lots: validLots,
+      totalGrossG: totalWeight,
+      totalPureG: totalPure,
+    }
+  }
+
   const handlePrint = () => {
-    if (!savedVoucher) { toast.error('Save the voucher first to print'); return }
-    window.print()
+    const params = getVoucherParams()
+    if (isReceipt) {
+      printReceiptVoucher(params)
+    } else {
+      printIssueVoucher(params)
+    }
+  }
+
+  const handleDownload = () => {
+    const params = getVoucherParams()
+    if (isReceipt) {
+      downloadReceiptVoucherPdf(params)
+    } else {
+      downloadIssueVoucherPdf(params)
+    }
   }
 
   return (
@@ -121,8 +184,13 @@ export default function VoucherPage({ type = 'receipt' }) {
           </p>
         </div>
         <div className="flex gap-2">
+          {savedVoucher && (
+            <button id="btn-download-voucher-pdf" className="btn btn-secondary" onClick={handleDownload}>
+              <Download size={14} /> Download PDF
+            </button>
+          )}
           <button id="btn-print-voucher" className="btn btn-ghost" onClick={handlePrint}>
-            <Printer /> {t('print')}
+            <Printer size={14} /> {t('print')}
           </button>
           <button
             id="btn-save-voucher"
@@ -130,7 +198,7 @@ export default function VoucherPage({ type = 'receipt' }) {
             onClick={handleSave}
             disabled={saving}
           >
-            {saving ? <><div className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} /> {t('saving')}</> : <><Save /> {t('save')} {isReceipt ? t('nav_receipt') : t('nav_issue')}</>}
+            {saving ? <><div className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} /> {t('saving')}</> : <><Save size={14} /> {t('save')} {isReceipt ? t('nav_receipt') : t('nav_issue')}</>}
           </button>
         </div>
       </div>

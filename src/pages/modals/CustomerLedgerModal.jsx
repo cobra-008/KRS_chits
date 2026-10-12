@@ -4,7 +4,8 @@ import { membersApi, chitDrawsApi } from '../../lib/api'
 import { getTotalFineDemanded, gramsToKg, krsRound } from '../../lib/silverCalc'
 import { format, parseISO } from 'date-fns'
 import toast from 'react-hot-toast'
-import { Printer, X } from 'lucide-react'
+import { Printer, X, Download } from 'lucide-react'
+import { downloadCustomerLedgerPdf, printCustomerLedger } from '../../lib/pdfGenerator'
 import { useLanguage } from '../../context/LanguageContext'
 
 export default function CustomerLedgerModal({ customer, onClose }) {
@@ -133,6 +134,23 @@ export default function CustomerLedgerModal({ customer, onClose }) {
   const totalCredits = ledgerRows.reduce((s, r) => s + (r.creditG || 0), 0)
   const finalBalance = ledgerRows.length > 0 ? ledgerRows[ledgerRows.length - 1].closingBalance : 0
 
+  const getLedgerParams = () => ({
+    customer,
+    memberships,
+    ledgerRows,
+    totalDebits,
+    totalCredits,
+    finalBalance,
+  })
+
+  const handlePrint = () => {
+    printCustomerLedger(getLedgerParams())
+  }
+
+  const handleDownload = () => {
+    downloadCustomerLedgerPdf(getLedgerParams())
+  }
+
   return (
     <div className="modal-backdrop" role="dialog" aria-modal="true">
       <div className="modal modal-xl">
@@ -145,7 +163,10 @@ export default function CustomerLedgerModal({ customer, onClose }) {
             </div>
           </div>
           <div className="flex gap-2">
-            <button className="btn btn-ghost btn-sm" onClick={() => window.print()}>
+            <button className="btn btn-secondary btn-sm" onClick={handleDownload}>
+              <Download size={13} /> Download PDF
+            </button>
+            <button className="btn btn-ghost btn-sm" onClick={handlePrint}>
               <Printer size={13} /> {t('print')}
             </button>
             <button className="btn btn-ghost btn-sm btn-icon" onClick={onClose}><X size={16} /></button>

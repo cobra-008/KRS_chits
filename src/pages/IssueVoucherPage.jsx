@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { Plus, Trash2, Printer, Save, CheckSquare, Square, Search, Package, ArrowRight, CornerDownRight, RotateCcw } from 'lucide-react'
+import { Plus, Trash2, Printer, Save, CheckSquare, Square, Search, Package, ArrowRight, CornerDownRight, RotateCcw, Download } from 'lucide-react'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
 import { calcFine, gramsToKg, formatGrams } from '../lib/silverCalc'
 import { customersApi, vouchersApi, inventoryApi } from '../lib/api'
+import { downloadIssueVoucherPdf, printIssueVoucher } from '../lib/pdfGenerator'
 import { useLanguage } from '../context/LanguageContext'
 
 const emptyCustomLot = () => ({
@@ -192,13 +193,34 @@ export default function IssueVoucherPage({ initialSelectedIds = [] }) {
         inventoryIds,
       })
 
+      const totalGrossG = lots.reduce((s, l) => s + (parseFloat(l.weight_g) || 0), 0)
+      const totalPureG = lots.reduce((s, l) => s + (parseFloat(l.pure_g) || 0), 0)
+
+      const voucherData = {
+        voucherNo: voucher.voucher_no,
+        voucherDate,
+        customer: selectedCustomer,
+        lots,
+        totalGrossG,
+        totalPureG,
+      }
+
       toast.success(`Issue Voucher #${voucher.voucher_no} saved! ${inventoryIds.length} vault kachas marked as issued.`)
       setSavedVoucher({
         ...voucher,
         lots,
         customer: selectedCustomer,
+        totalGrossG,
+        totalPureG,
         notes,
       })
+
+      // Auto-download PDF
+      try {
+        downloadIssueVoucherPdf(voucherData)
+      } catch (pdfErr) {
+        console.warn('PDF export notice:', pdfErr)
+      }
 
       // Reset selection and refresh vault
       setSelectedIds(new Set())
@@ -214,12 +236,34 @@ export default function IssueVoucherPage({ initialSelectedIds = [] }) {
     }
   }
 
+  const getVoucherParams = () => {
+    if (!savedVoucher) return null
+    return {
+      voucherNo: savedVoucher.voucher_no,
+      voucherDate: savedVoucher.voucher_date || voucherDate,
+      customer: savedVoucher.customer || selectedCustomer || { name: 'Customer' },
+      lots: savedVoucher.lots || [],
+      totalGrossG: savedVoucher.totalGrossG || 0,
+      totalPureG: savedVoucher.totalPureG || 0,
+    }
+  }
+
   const handlePrint = () => {
-    if (!savedVoucher) {
+    const params = getVoucherParams()
+    if (!params) {
       toast.error('Save the voucher first to print')
       return
     }
-    window.print()
+    printIssueVoucher(params)
+  }
+
+  const handleDownload = () => {
+    const params = getVoucherParams()
+    if (!params) {
+      toast.error('Save the voucher first to download')
+      return
+    }
+    downloadIssueVoucherPdf(params)
   }
 
   return (
@@ -234,9 +278,14 @@ export default function IssueVoucherPage({ initialSelectedIds = [] }) {
         </div>
         <div className="flex gap-2">
           {savedVoucher && (
-            <button id="btn-print-issue" className="btn btn-ghost" onClick={handlePrint}>
-              <Printer /> {t('btn_print_voucher', 'Print Voucher')}
-            </button>
+            <>
+              <button id="btn-download-issue-pdf" className="btn btn-secondary" onClick={handleDownload}>
+                <Download size={14} /> Download PDF
+              </button>
+              <button id="btn-print-issue" className="btn btn-ghost" onClick={handlePrint}>
+                <Printer size={14} /> {t('btn_print_voucher', 'Print Voucher')}
+              </button>
+            </>
           )}
           <button
             id="btn-save-issue-voucher"
@@ -247,7 +296,7 @@ export default function IssueVoucherPage({ initialSelectedIds = [] }) {
             {saving ? (
               <><div className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} /> {t('saving', 'Saving…')}</>
             ) : (
-              <><Save /> {t('btn_confirm_issue', 'Save Issue Voucher')}</>
+              <><Save size={14} /> {t('btn_confirm_issue', 'Save Issue Voucher')}</>
             )}
           </button>
         </div>
